@@ -1,0 +1,538 @@
+<HOME>:
+    BoxLayout:
+        orientation: "vertical"
+
+        Widget:
+            size_hint_y: None
+            height: self.width / 3.7
+
+            FloatLayout:
+                size: self.parent.size
+                pos: self.parent.pos
+
+                Image:
+                    source: "./assets/home/homeDesign/gradientBackground.png"
+                    size_hint_x: 1
+                    size_hint_y: None
+                    width: self.parent.width
+                    height: self.texture_size[1] * (self.width / self.texture_size[0])
+                    keep_ratio: True
+                    pos_hint: {"x": 0, "center_y": -3}
+
+                Image:
+                    source: "./assets/home/homeDesign/subtleRay.png"
+                    size_hint_x: 1
+                    size_hint_y: None
+                    width: self.parent.width
+                    height: self.texture_size[1] * (self.width / self.texture_size[0])
+                    keep_ratio: True
+                    pos_hint: {"x": 0, "center_y": -1}
+
+
+
+        #BINGO Title
+        Image:
+            source: "./assets/home/BINGO.png"
+            size_hint_y: None
+            height: self.width / 1.6
+            allow_stretch: True
+            keep_ratio: True
+        
+        Widget:
+            size_hint_y: None
+            height: self.width / 2.6
+            
+            FloatLayout:
+                size: self.parent.size
+                pos: self.parent.pos
+
+                Image:
+                    source: "./assets/home/homeBottom/overlay_stars.png"
+                    size_hint_x: 1
+                    size_hint_y: None
+                    width: self.parent.width
+                    height: self.texture_size[1] * (self.width / self.texture_size[0])
+                    keep_ratio: True
+                    pos_hint: {"x": 0, "center_y": -1.358}
+
+                Image:
+                    source: "./assets/home/homeBottom/checkered.png"
+                    size_hint_x: 1
+                    size_hint_y: None
+                    width: self.parent.width
+                    height: self.texture_size[1] * (self.width / self.texture_size[0])
+                    keep_ratio: True
+                    pos_hint: {"x": 0, "y": -2.2}
+
+        BoxLayout:
+            orientation: "vertical"
+            spacing: 20
+            
+            # ScanButton
+            Button:
+                id: scanAcademicMaterial_button
+                size_hint_x: 0.86
+                size_hint_y: None
+                height: self.width / 3.9
+                pos_hint: {"center_x": 0.5}
+                background_normal: "./assets/home/buttons/buttonDesign/scanButtonRectangle.png"
+                background_down: "./assets/home/buttons/buttonDesign/scanButtonRectangle_Pressed.png"
+
+                FloatLayout:
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+                    Image:
+                        source: "./assets/home/buttons/buttonIcons/camera.png"
+                        size_hint: None, None
+                        size: "50dp", "50dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.07, "center_y": 0.52}
+
+                    Image:
+                        source: "./assets/home/buttons/buttonText/scanAcademicMaterial.png"
+                        size_hint: None, None
+                        size: "175dp", "175dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.285, "center_y": 0.63}
+
+                    Label:
+                        text: "Scan or upload your notes and study \nmaterials"
+                        font_size: "9sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.29, "center_y": 0.38}
+                    
+                    Label:
+                        text: ">"
+                        font_size: "13sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PressStart2P.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.9, "center_y": 0.5}
+
+
+
+            #ManualButton
+            Button:
+                id: manualEncoding_button
+                size_hint_x: 0.86
+                size_hint_y: None
+                height: self.width / 3.9
+                pos_hint: {"center_x": 0.5}
+                background_normal: "./assets/home/buttons/buttonDesign/manualButtonRectangle.png"
+                background_down: "./assets/home/buttons/buttonDesign/manualButtonRectangle_Pressed.png"
+                
+                FloatLayout:
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+                    Image:
+                        source: "./assets/home/buttons/buttonIcons/pencil.png"
+                        size_hint: None, None
+                        size: "67dp", "67dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.035, "center_y": 0.52}
+
+                    Image:
+                        source: "./assets/home/buttons/buttonText/manualEncoding.png"
+                        size_hint: None, None
+                        size: "115dp", "115dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.285, "center_y": 0.58}
+
+                    Label:
+                        text: "Enter terms and define manually"
+                        font_size: "9sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.29, "center_y": 0.44}
+                    
+                    Label:
+                        text: ">"
+                        font_size: "13sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PressStart2P.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.9, "center_y": 0.5} 
+
+            #ReviewSetsButton
+            Button:
+                id: reviewSets_button
+                size_hint_x: 0.86
+                size_hint_y: None
+                height: self.width / 3.9
+                pos_hint: {"center_x": 0.5}
+                background_normal: "./assets/home/buttons/buttonDesign/reviewButtonRectangle.png"
+                background_down: "./assets/home/buttons/buttonDesign/reviewButtonRectangle_Pressed.png"
+
+                FloatLayout:
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+                    Image:
+                        source: "./assets/home/buttons/buttonIcons/folder.png"
+                        size_hint: None, None
+                        size: "65dp", "65dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.037, "center_y": 0.52}
+                    
+                    Image:
+                        source: "./assets/home/buttons/buttonText/myReviewSets.png"
+                        size_hint: None, None
+                        size: "115dp", "115dp"
+                        keep_ratio: True
+                        pos_hint: {"x": 0.285, "center_y": 0.58}
+
+                    Label:
+                        text: "View and manage your saved review sets"
+                        font_size: "9sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.29, "center_y": 0.44}
+                    
+                    Label:
+                        text: ">"
+                        font_size: "13sp"
+                        color: 0, 0, 0, 1
+                        font_name: "./assets/fonts/PressStart2P.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"x": 0.9, "center_y": 0.5}
+            
+        FloatLayout:
+            size: self.parent.size
+            pos: self.parent.pos
+
+            Image:
+                source: "./assets/home/homeBottom/ball41.png"
+                size_hint: None, None
+                size: "75dp", "75dp"
+                keep_ratio: True
+                pos_hint: {"x": 0.037, "center_y": 0.44}
+
+            Image:
+                source: "./assets/home/homeBottom/books.png"
+                size_hint: None, None
+                size: "88dp", "88dp"
+                keep_ratio: True
+                pos_hint: {"x": 0.72, "center_y": 0.44}
+            
+            Button:
+                size_hint: None, None
+                size: "150dp", "30dp"
+                pos_hint: {"center_x": 0.5, "center_y": 0.4}
+
+                background_normal: "./assets/home/buttons/buttonDesign/idkButtonRectangle.png"
+                background_down: "./assets/home/buttons/buttonDesign/idkButtonRectangle_Pressed.png"
+
+                FloatLayout:
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+                    Label:
+                        text: "idk placeholder"
+                        font_size: "6sp"
+                        font_name: "./assets/fonts/PressStart2P.ttf"
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"center_x": 0.5, "center_y": 0.6}
+
+            
+            Image:
+                source: "./assets/home/homeDesign/cat1.png"
+                size_hint: None, None
+                size: "75dp", "75dp"
+                keep_ratio: True
+                pos_hint: {"center_x": 0.5, "center_y": 2.99}
+
+<SCAN>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+            
+            # Back Button
+            Button:
+                id: scanBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+        FloatLayout:
+            FloatLayout:
+                orientation: "vertical"
+                size_hint: 0.95, 0.97
+                pos_hint: {"center_x": 0.5, "y": 0.043}
+
+                canvas.before:
+                    Rectangle:
+                        source: "./assets/images/general/purpleBigBackground.png"
+                        pos: self.pos
+                        size: self.size
+
+                CameraWidget:
+                    canvas.before:
+                        Color:
+                            rgba: 0.047, 0, 0.129, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                            
+                    id: camera
+                    size_hint: None, 0.78
+                    width: self.height * (9/16)
+                    pos_hint: {"center_x": 0.5, "y": 0.15}
+
+                Button:
+                    id: takephoto
+                    text: "Take\nPhoto"
+                    size_hint: None, None
+                    size: dp(120), dp(60)
+                    pos_hint: {"center_x": 0.3, "y": 0.05}
+
+                Button:
+                    text: "Upload\nPhoto"
+                    size_hint: None, None
+                    size: dp(120), dp(60)
+                    pos_hint: {"center_x": 0.70, "y": 0.05}
+<IMAGEPREVIEW>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+            
+            # Back Button
+            Button:
+                id: photoBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+        FloatLayout:
+            orientation: "vertical"
+            Image:
+                id: preview_image
+                size_hint: 0.8, None
+                height: self.width * (16/9)
+                fit_mode: "contain"
+                pos_hint: {"center_x":0.5, "center_y":0.565}
+
+            Button:
+                text: "Use Photo"
+                size_hint_y: None
+                height: dp(70)
+                background_color: 0, 0, 0, 0
+
+<TEXTPREVIEW>
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+            
+            # Back Button
+            Button:
+                id: textBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+<MANUAL>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+            
+            # Back Button
+            Button:
+                id: manualBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+        FloatLayout:
+            FloatLayout:
+                orientation: "vertical"
+                size_hint: 0.95, 0.97
+                pos_hint: {"center_x": 0.5, "y": 0.043}
+
+                canvas.before:
+                    Rectangle:
+                        source: "./assets/images/general/purpleBigBackground.png"
+                        pos: self.pos
+                        size: self.size
+
+                #Terms
+                FloatLayout:
+                    size_hint_y: None
+                    pos_hint: {"center_x": 0.5, "center_y": 0.868}
+                    height: "80dp"
+
+                    Image:
+                        source: "./assets/images/manual/termLabel.png"
+                        size_hint: None, None
+                        width: "50dp"
+                        pos_hint: {"x": 0.13, "center_y": 1}
+                    
+                    Image:
+                        source: "./assets/images/manual/termInput.png"
+                        size_hint: 0.87, None
+                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                    
+                    TextInput:
+                        id: termInput
+                        size_hint: 0.7, None
+                        height: dp(45)
+
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        font_size: "14sp"
+                        foreground_color: 0, 0, 0, 1
+                        cursor_color: 0, 0, 0, 1
+
+                        hint_text: "Primary Key"
+                        hint_text_color: 0, 0, 0, 0.3
+
+                        background_color: 0, 0, 0, 0
+                        pos_hint: {"center_x": 0.5, "center_y": 0.4}
+
+                
+                #Definition
+                FloatLayout:
+                    size_hint_y: None
+                    pos_hint: {"center_x": 0.5, "center_y": 0.568}
+                    height: "195dp"
+
+                    Image:
+                        source: "./assets/images/manual/definitionLabel.png"
+                        size_hint: None, None
+                        width: "100dp"
+                        pos_hint: {"x": 0.13, "center_y": 1.25}
+                    
+                    Image:
+                        source: "./assets/images/manual/definitionInput.png"
+                        size_hint: 1, 0.9
+                        pos_hint: {"center_x": 0.5, "center_y": 0.8}
+
+                    TextInput:
+                        id: definitionInput
+                        size_hint: 0.7, None
+                        height: dp(120)
+                        
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        font_size: "16sp"
+                        foreground_color: 0, 0, 0, 1
+                        cursor_color: 0, 0, 0, 1
+
+                        hint_text: "A field that uniquely identifies each record in the table. It is unique and cannot have duplicated values. An example of this is |"
+                        hint_text_color: 0, 0, 0, 0.3
+                        multiline: True
+
+                        background_color: 1, 0, 0, 0
+                        pos_hint: {"center_x": 0.5, "center_y": 0.8}
+                
+                # Add Terms
+                Button:
+                    id: addTermButton
+                    size_hint: 0.63, None
+                    height: self.width * ( 71 / 232 )
+
+                    background_normal: "./assets/images/manual/addTermButton.png"
+                    background_down: "./assets/images/manual/addTermButton.png"
+                    
+                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                
+                Label:
+                    text: "................................................................................."
+                    font_name: "./assets/fonts/PressStart2P.ttf"
+                    font_size: "3.95sp"
+                    pos_hint: {"center_x": 0.5}
+
+
+
+
+
+
+        
+
+
+
+
+
+        
+
+
+        
