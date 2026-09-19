@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 captured.jpg
+testing/
+bingo.db
+aiOutput.txt

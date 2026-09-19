@@ -11,7 +11,7 @@
                 pos: self.parent.pos
 
                 Image:
-                    source: "./assets/home/homeDesign/gradientBackground.png"
+                    source: "./assets/pageAssets/home/homeDesign/gradientBackground.png"
                     size_hint_x: 1
                     size_hint_y: None
                     width: self.parent.width
@@ -20,7 +20,7 @@
                     pos_hint: {"x": 0, "center_y": -3}
 
                 Image:
-                    source: "./assets/home/homeDesign/subtleRay.png"
+                    source: "./assets/pageAssets/home/homeDesign/subtleRay.png"
                     size_hint_x: 1
                     size_hint_y: None
                     width: self.parent.width
@@ -32,7 +32,7 @@
 
         #BINGO Title
         Image:
-            source: "./assets/home/BINGO.png"
+            source: "./assets/pageAssets/home/BINGO.png"
             size_hint_y: None
             height: self.width / 1.6
             allow_stretch: True
@@ -47,7 +47,7 @@
                 pos: self.parent.pos
 
                 Image:
-                    source: "./assets/home/homeBottom/overlay_stars.png"
+                    source: "./assets/pageAssets/home/homeBottom/overlay_stars.png"
                     size_hint_x: 1
                     size_hint_y: None
                     width: self.parent.width
@@ -56,7 +56,7 @@
                     pos_hint: {"x": 0, "center_y": -1.358}
 
                 Image:
-                    source: "./assets/home/homeBottom/checkered.png"
+                    source: "./assets/pageAssets/home/homeBottom/checkered.png"
                     size_hint_x: 1
                     size_hint_y: None
                     width: self.parent.width
@@ -75,22 +75,22 @@
                 size_hint_y: None
                 height: self.width / 3.9
                 pos_hint: {"center_x": 0.5}
-                background_normal: "./assets/home/buttons/buttonDesign/scanButtonRectangle.png"
-                background_down: "./assets/home/buttons/buttonDesign/scanButtonRectangle_Pressed.png"
+                background_normal: "./assets/pageAssets/home/buttons/buttonDesign/scanButtonRectangle.png"
+                background_down: "./assets/pageAssets/home/buttons/buttonDesign/scanButtonRectangle_Pressed.png"
 
                 FloatLayout:
                     size: self.parent.size
                     pos: self.parent.pos
 
                     Image:
-                        source: "./assets/home/buttons/buttonIcons/camera.png"
+                        source: "./assets/pageAssets/home/buttons/buttonIcons/camera.png"
                         size_hint: None, None
                         size: "50dp", "50dp"
                         keep_ratio: True
                         pos_hint: {"x": 0.07, "center_y": 0.52}
 
                     Image:
-                        source: "./assets/home/buttons/buttonText/scanAcademicMaterial.png"
+                        source: "./assets/pageAssets/home/buttons/buttonText/scanAcademicMaterial.png"
                         size_hint: None, None
                         size: "175dp", "175dp"
                         keep_ratio: True
@@ -123,22 +123,22 @@
                 size_hint_y: None
                 height: self.width / 3.9
                 pos_hint: {"center_x": 0.5}
-                background_normal: "./assets/home/buttons/buttonDesign/manualButtonRectangle.png"
-                background_down: "./assets/home/buttons/buttonDesign/manualButtonRectangle_Pressed.png"
+                background_normal: "./assets/pageAssets/home/buttons/buttonDesign/manualButtonRectangle.png"
+                background_down: "./assets/pageAssets/home/buttons/buttonDesign/manualButtonRectangle_Pressed.png"
                 
                 FloatLayout:
                     size: self.parent.size
                     pos: self.parent.pos
 
                     Image:
-                        source: "./assets/home/buttons/buttonIcons/pencil.png"
+                        source: "./assets/pageAssets/home/buttons/buttonIcons/pencil.png"
                         size_hint: None, None
                         size: "67dp", "67dp"
                         keep_ratio: True
                         pos_hint: {"x": 0.035, "center_y": 0.52}
 
                     Image:
-                        source: "./assets/home/buttons/buttonText/manualEncoding.png"
+                        source: "./assets/pageAssets/home/buttons/buttonText/manualEncoding.png"
                         size_hint: None, None
                         size: "115dp", "115dp"
                         keep_ratio: True
@@ -164,27 +164,27 @@
 
             #ReviewSetsButton
             Button:
-                id: reviewSets_button
+                id: ReviewSets_button
                 size_hint_x: 0.86
                 size_hint_y: None
                 height: self.width / 3.9
                 pos_hint: {"center_x": 0.5}
-                background_normal: "./assets/home/buttons/buttonDesign/reviewButtonRectangle.png"
-                background_down: "./assets/home/buttons/buttonDesign/reviewButtonRectangle_Pressed.png"
+                background_normal: "./assets/pageAssets/home/buttons/buttonDesign/reviewButtonRectangle.png"
+                background_down: "./assets/pageAssets/home/buttons/buttonDesign/reviewButtonRectangle_Pressed.png"
 
                 FloatLayout:
                     size: self.parent.size
                     pos: self.parent.pos
 
                     Image:
-                        source: "./assets/home/buttons/buttonIcons/folder.png"
+                        source: "./assets/pageAssets/home/buttons/buttonIcons/folder.png"
                         size_hint: None, None
                         size: "65dp", "65dp"
                         keep_ratio: True
                         pos_hint: {"x": 0.037, "center_y": 0.52}
                     
                     Image:
-                        source: "./assets/home/buttons/buttonText/myReviewSets.png"
+                        source: "./assets/pageAssets/home/buttons/buttonText/myReviewSets.png"
                         size_hint: None, None
                         size: "115dp", "115dp"
                         keep_ratio: True
@@ -213,14 +213,14 @@
             pos: self.parent.pos
 
             Image:
-                source: "./assets/home/homeBottom/ball41.png"
+                source: "./assets/pageAssets/home/homeBottom/ball41.png"
                 size_hint: None, None
                 size: "75dp", "75dp"
                 keep_ratio: True
                 pos_hint: {"x": 0.037, "center_y": 0.44}
 
             Image:
-                source: "./assets/home/homeBottom/books.png"
+                source: "./assets/pageAssets/home/homeBottom/books.png"
                 size_hint: None, None
                 size: "88dp", "88dp"
                 keep_ratio: True
@@ -231,8 +231,8 @@
                 size: "150dp", "30dp"
                 pos_hint: {"center_x": 0.5, "center_y": 0.4}
 
-                background_normal: "./assets/home/buttons/buttonDesign/idkButtonRectangle.png"
-                background_down: "./assets/home/buttons/buttonDesign/idkButtonRectangle_Pressed.png"
+                background_normal: "./assets/pageAssets/home/buttons/buttonDesign/idkButtonRectangle.png"
+                background_down: "./assets/pageAssets/home/buttons/buttonDesign/idkButtonRectangle_Pressed.png"
 
                 FloatLayout:
                     size: self.parent.size
@@ -248,13 +248,13 @@
 
             
             Image:
-                source: "./assets/home/homeDesign/cat1.png"
+                source: "./assets/pageAssets/home/homeDesign/cat1.png"
                 size_hint: None, None
                 size: "75dp", "75dp"
                 keep_ratio: True
                 pos_hint: {"center_x": 0.5, "center_y": 2.99}
 
-<SCAN>:
+<SCAN>
     BoxLayout:
         orientation: "vertical"
         canvas.before:
@@ -294,6 +294,77 @@
                         source: "./assets/images/general/purpleBigBackground.png"
                         pos: self.pos
                         size: self.size
+
+                FloatLayout:
+                    Image:
+                        source: "./assets/pageAssets/scan/provideMaterial.png"
+                        size_hint: 0.6, None
+                        height: self.width * (159/225)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.87}
+                    Button:
+                        id: cameraButton
+                        size_hint: 0.75, None
+                        height: self.width * (132/298)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.65}
+                        background_normal: "./assets/pageAssets/scan/cameraButton.png"
+                        background_down: "./assets/pageAssets/scan/cameraButton.png"
+                    Image:
+                        source: "./assets/pageAssets/scan/or.png"
+                        size_hint: 0.6, None
+                        height: self.width * (159/225)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.54}
+                    Button:
+                        id: uploadButton
+                        size_hint: 0.75, None
+                        height: self.width * (132/298)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.44}
+                        background_normal: "./assets/pageAssets/scan/uploadButton.png"
+                        background_down: "./assets/pageAssets/scan/uploadButton.png"
+                    Image:
+                        source: "./assets/pageAssets/scan/supported.png"
+                        size_hint: 0.6, None
+                        height: self.width * (159/225)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.33}
+
+
+
+
+
+
+<CAMERASCAN>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+            
+            # Back Button
+            Button:
+                id: camerascanBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+        FloatLayout:
+            FloatLayout:
+                orientation: "vertical"
+                size_hint: 0.95, 0.97
+                pos_hint: {"center_x": 0.5, "y": 0.043}
 
                 CameraWidget:
                     canvas.before:
@@ -359,12 +430,13 @@
                 pos_hint: {"center_x":0.5, "center_y":0.565}
 
             Button:
+                id: usePhotoButton
                 text: "Use Photo"
                 size_hint_y: None
                 height: dp(70)
                 background_color: 0, 0, 0, 0
 
-<TEXTPREVIEW>
+<TEXTPREVIEW>:
     BoxLayout:
         orientation: "vertical"
         canvas.before:
@@ -393,6 +465,13 @@
                     source: "./assets/icons/backButton.png"
                     size: self.parent.size
                     pos: self.parent.pos
+        FloatLayout:
+            Label:
+                text: root.ocr_text
+                font_name: "./assets/fonts/PixelifySans.ttf"
+                font_size: "12sp"
+                color: 1, 1, 1, 1
+                text_size: self.width, None
 <MANUAL>:
     BoxLayout:
         orientation: "vertical"
@@ -431,10 +510,17 @@
                 pos_hint: {"center_x": 0.5, "y": 0.043}
 
                 canvas.before:
+                    Color:
+                        rgba: 0.0471, 0, 0.1294, 1
                     Rectangle:
-                        source: "./assets/images/general/purpleBigBackground.png"
                         pos: self.pos
                         size: self.size
+
+                Image:
+                    source: "./assets/pageAssets/manual/background.png"
+                    size_hint: 1, None
+                    height: self.width * (735/380)
+                    pos_hint:{"center_x":0.5, "center_y":0.55}
 
                 #Terms
                 FloatLayout:
@@ -443,13 +529,13 @@
                     height: "80dp"
 
                     Image:
-                        source: "./assets/images/manual/termLabel.png"
+                        source: "./assets/pageAssets/manual/termLabel.png"
                         size_hint: None, None
                         width: "50dp"
                         pos_hint: {"x": 0.13, "center_y": 1}
                     
                     Image:
-                        source: "./assets/images/manual/termInput.png"
+                        source: "./assets/pageAssets/manual/termInput.png"
                         size_hint: 0.87, None
                         pos_hint: {"center_x": 0.5, "center_y": 0.5}
                     
@@ -477,13 +563,13 @@
                     height: "195dp"
 
                     Image:
-                        source: "./assets/images/manual/definitionLabel.png"
+                        source: "./assets/pageAssets/manual/definitionLabel.png"
                         size_hint: None, None
                         width: "100dp"
                         pos_hint: {"x": 0.13, "center_y": 1.25}
                     
                     Image:
-                        source: "./assets/images/manual/definitionInput.png"
+                        source: "./assets/pageAssets/manual/definitionInput.png"
                         size_hint: 1, 0.9
                         pos_hint: {"center_x": 0.5, "center_y": 0.8}
 
@@ -510,17 +596,188 @@
                     size_hint: 0.63, None
                     height: self.width * ( 71 / 232 )
 
-                    background_normal: "./assets/images/manual/addTermButton.png"
-                    background_down: "./assets/images/manual/addTermButton.png"
+                    background_normal: "./assets/pageAssets/manual/addTermButton.png"
+                    background_down: "./assets/pageAssets/manual/addTermButton.png"
                     
                     pos_hint: {"center_x": 0.5, "center_y": 0.5}
                 
-                Label:
-                    text: "................................................................................."
-                    font_name: "./assets/fonts/PressStart2P.ttf"
-                    font_size: "3.95sp"
-                    pos_hint: {"center_x": 0.5}
+                Image:
+                    source: "./assets/pageAssets/manual/divider.png"
+                    size_hint: 0.8, None
+                    height: self.width * (3/323)
+                    pos_hint: {"center_x": 0.5, "center_y": 0.44}
+                
+                Image:
+                    source: "./assets/pageAssets/manual/currentEntries.png"
+                    size_hint: 0.7, None
+                    height: self.width * (33/36)
+                    pos_hint: {"center_x": 0.5, "y": 0.24}
 
+                Image:
+                    source: "./assets/pageAssets/manual/entriesBorder.png"
+                    size_hint: 0.8, None
+                    height: self.width * (150/292)
+                    pos_hint: {"center_x": 0.5, "center_y": 0.28}
+                ScrollView:
+                    size_hint: 0.75, 0.2
+                    pos_hint: {"x": 0.12, "center_y": 0.28}    
+                    bar_width: dp(0)
+
+
+                    GridLayout:
+                        id: entriesContainer
+                        cols: 1
+                        spacing: dp(8)
+                        padding: dp(5)
+                        size_hint_y: None
+                        height: self.minimum_height
+                        bar_width: dp(0)
+
+
+                Label:
+                    id: entryCountLabel
+                    text: "0"
+                    font_name: "./assets/fonts/PressStart2P.ttf"
+                    font_size: "12sp"
+                    pos_hint: {"x":0.302, "center_y":0.41}
+                
+                Button:
+                    id: continueButton
+                    size_hint: 0.56, None
+                    height: self.width * (70/230)
+                    pos_hint: {"center_x": 0.5, "center_y":0.08}
+                    background_normal: "./assets/pageAssets/manual/continueButton.png"
+                    background_down: "./assets/pageAssets/manual/continueButton.png"
+
+<GoBackPopup>:
+    size_hint: 1, 1
+
+    # POPUP BACKGROUND
+    Image:
+        source: "./assets/pageAssets/manual/popup/popupBackground.png"
+
+        size_hint: 1.2, None
+        height: self.width * 169 / 360
+
+        pos_hint:
+            {"center_x": 0.5, "center_y": 0.5}
+
+        allow_stretch: True
+        keep_ratio: False
+
+    # LEAVE
+    Button:
+        id: leaveButton
+
+        background_normal: "./assets/pageAssets/manual/popup/leaveButton.png"
+        background_down: "./assets/pageAssets/manual/popup/leaveButton.png"
+        border: 0, 0, 0, 0
+
+        size_hint: 0.42, None
+        height: self.width * 66 / 128
+
+        pos_hint:
+            {"center_x": 0.27, "center_y": 0.2}
+
+    # STAY
+    Button:
+        id: stayButton
+
+        background_normal: "./assets/pageAssets/manual/popup/stayButton.png"
+        background_down: "./assets/pageAssets/manual/popup/stayButton.png"
+        border: 0, 0, 0, 0
+
+        size_hint: 0.42, None
+        height: self.width * 44 / 130
+
+        pos_hint:
+            {"center_x": 0.73, "center_y": 0.2}
+
+
+<CONTENTREVIEW>
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+            size_hint_y: None
+            height: "40dp"
+
+            # Back Button
+            Button:
+                id: conRevBackButton
+                size_hint: None, None
+                size: dp(60), dp(60)
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+
+                Image:
+                    source: "./assets/icons/backButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+
+        FloatLayout:
+            TextInput:
+                id: reviewSetName
+                size_hint: 0.8, None
+                height: dp(42)
+
+                font_name: "./assets/fonts/PressStart2P.ttf"
+                font_size: "16sp"
+                foreground_color: 1, 1, 1, 1
+                cursor_color: 0, 0, 0, 1
+                halign: "left"
+
+
+                hint_text: "ENTER SETNAME"
+                hint_text_color: 1, 1, 1, 1
+
+                background_color: 0, 0, 0, 0
+                pos_hint: {"center_x": 0.44, "center_y": 0.96}
+            
+            Button:
+                id: edit_button
+                size_hint: 0.2, None
+                height: self.width * 26 / 92
+                background_color: 0, 0, 0, 0
+                pos_hint: {"x": 0.745, "center_y": 0.97}
+
+                Image:
+                    source: "./assets/pageAssets/contentreview/editButton.png"
+                    size: self.parent.size
+                    pos: self.parent.pos
+            
+            Image:
+                source:"./assets/pageAssets/contentreview/setContainer.png"
+                size_hint: .9, None
+                height: self.width * (589/363)
+                pos_hint: {"center_x": 0.5, "center_y": 0.55}
+
+            
+            ScrollView:
+                size_hint: 0.82, 0.75
+                pos_hint: {"center_x": 0.5, "center_y": 0.55}
+                bar_width: dp(0)
+
+
+
+
+                GridLayout:
+                    id: contentEntriesContainer
+                    cols: 1
+                    spacing: dp(8)
+                    padding: dp(5)
+                    size_hint_y: None
+                    height: self.minimum_height
 
 
 
