@@ -123,6 +123,24 @@ class Database:
         """, (term_id,))
 
         self.connection.commit()
+
+    def update_review_set_name(self, review_set_id, name):
+        self.cursor.execute("""
+            UPDATE review_sets
+            SET name = ?
+            WHERE id = ?
+        """, (name, review_set_id))
+
+        self.connection.commit()
+
+    def get_review_sets(self):
+        self.cursor.execute("""
+            SELECT id, name
+            FROM review_sets
+            ORDER BY created_at DESC
+        """)
+
+        return self.cursor.fetchall()
     
     def delete_review_set(self, review_set_id):
 
@@ -280,7 +298,7 @@ class ImagePreview(Screen):
     
     def take_photo_again(self, instance):
         self.manager.transition.direction = "right"
-        self.manager.current = "scan"
+        self.manager.current = "camerascan"
         
 
     def on_enter(self):
@@ -292,7 +310,7 @@ class ImagePreview(Screen):
             PILImage.open(self.image_path)
         )
         
-        print("[OCR] Output printed successfully.")
+        print("OCR Output:")
         print(text)
 
         textpreview = self.manager.get_screen("textpreview")
@@ -315,17 +333,22 @@ class Manual(Screen):
 
         app = App.get_running_app()
 
-        # No review set or no entries → go straight home
-        if (
-            self.review_set_id is None
-            or app.db.get_term_count(self.review_set_id) == 0
-        ):
+        if self.review_set_id is None:
+            self.manager.transition.direction = "right"
+            self.manager.current = "home"
+            return
+
+        if app.db.get_term_count(self.review_set_id) == 0:
+
+            app.db.delete_review_set(self.review_set_id)
+
+            print("Deleted empty Review Set:", self.review_set_id)
+
             self.review_set_id = None
             self.manager.transition.direction = "right"
             self.manager.current = "home"
             return
 
-        # Has entries → show confirmation popup
         popup_content = GoBackPopup()
 
         popup = Popup(
@@ -368,13 +391,10 @@ class Manual(Screen):
 
             self.review_set_id = None
 
-        # Clear entries from the ScrollView
         self.ids.entriesContainer.clear_widgets()
 
-        # Reset entry counter
         self.ids.entryCountLabel.text = "0"
 
-        # Clear text inputs
         self.ids.termInput.text = ""
         self.ids.definitionInput.text = ""
 
@@ -434,19 +454,13 @@ class Manual(Screen):
     def edit_entry(self, term_id, term, definition, entry_widget):
         app = App.get_running_app()
 
-        print("EDITING ENTRY:", term_id)
-
-        # Put old values into the inputs
         self.ids.termInput.text = term
         self.ids.definitionInput.text = definition
 
-        # Delete old database entry
         app.db.delete_term(term_id)
 
-        # Remove old UI entry
         self.ids.entriesContainer.remove_widget(entry_widget)
 
-        # Update counter
         count = app.db.get_term_count(self.review_set_id)
         self.ids.entryCountLabel.text = str(count)
 
@@ -480,7 +494,7 @@ class TermEntry(FloatLayout):
 
         self.size_hint_y = None
 
-        # TERM
+        # Term
         term_label = Label(
             text=term,
             font_name="./assets/fonts/PressStart2P.ttf",
@@ -508,7 +522,7 @@ class TermEntry(FloatLayout):
             )
         )
 
-        # DEFINITION
+        # Definition
         definition_label = Label(
             text=definition,
             font_name="./assets/fonts/PixelifySans.ttf",
@@ -536,7 +550,7 @@ class TermEntry(FloatLayout):
             )
         )
 
-        # DIVIDER
+        # Dividier
         divider = Image(
             source="./assets/pageAssets/manual/divider.png",
             size_hint=(1.5, None),
@@ -618,6 +632,29 @@ class ContentReview(Screen):
             )
 
             self.ids.contentEntriesContainer.add_widget(entry)
+    
+    def complete_reviewer(self, instance):
+
+        if self.review_set_id is None:
+            print("No review set selected.")
+            return
+
+        app = App.get_running_app()
+
+        name = self.ids.reviewSetName.text.strip()
+
+        if not name:
+            name = "Untitled Review Set"
+
+        app.db.update_review_set_name(self.review_set_id, name)
+
+        print("Saved Review Set:", self.review_set_id, "-", name)
+
+        reviewsets = self.manager.get_screen("reviewsets")
+        reviewsets.load_review_sets()
+
+        self.manager.transition.direction = "left"
+        self.manager.current = "reviewsets"
 
 class ContentReviewEntry(FloatLayout):
 
@@ -625,10 +662,6 @@ class ContentReviewEntry(FloatLayout):
         super().__init__(**kwargs)
 
         self.size_hint_y = None
-
-        # =========================
-        # NUMBER BACKGROUND
-        # =========================
 
         entryBackground = Image(
             source="./assets/pageAssets/contentreview/entryBackground.png",
@@ -645,9 +678,6 @@ class ContentReviewEntry(FloatLayout):
 
         self.add_widget(entryBackground)
 
-        # =========================
-        # NUMBER
-        # =========================
 
         number_label = Label(
             text=str(number),
@@ -656,16 +686,13 @@ class ContentReviewEntry(FloatLayout):
             color=(1, 1, 1, 1),
             size_hint=(None, None),
             size=(40, 40),
-            pos_hint={"x": 0.01},   # <-- removed "top": 1.08
+            pos_hint={"x": 0.01},  
             halign="center",
             valign="middle"
         )
 
         self.add_widget(number_label)
 
-        # =========================
-        # TERM
-        # =========================
 
         term_label = Label(
             text=term,
@@ -673,7 +700,7 @@ class ContentReviewEntry(FloatLayout):
             font_size="17sp",
             color=(1, 0.749, 0.2, 1),
             size_hint=(0.8, None),
-            pos_hint={"x": 0.16},   # <-- removed "top": 1.1
+            pos_hint={"x": 0.16},  
             halign="left",
             valign="top"
         )
@@ -697,10 +724,6 @@ class ContentReviewEntry(FloatLayout):
         )
 
         self.add_widget(term_label)
-
-        # =========================
-        # DEFINITION
-        # =========================
 
         definition_label = Label(
             text=definition,
@@ -750,24 +773,16 @@ class ContentReviewEntry(FloatLayout):
         self.add_widget(divider)
 
 
-        # =========================
-        # UPDATE POSITIONS + HEIGHT
-        # =========================
-
         def update_layout(*args):
 
-            # Anchor term/number to a FIXED offset above the entry's top,
-            # instead of a fraction of self.height
             number_label.top = self.top + dp(4)
 
             term_label.top = self.top + dp(8)
 
-            # Put definition directly below term
             definition_label.top = term_label.y - dp(-3)
             
             divider.y = self.y + dp(8)
 
-            # Entry height based on both pieces of text
             self.height = (
                 term_label.height
                 + dp(5)
@@ -784,7 +799,7 @@ class ContentReviewEntry(FloatLayout):
             height=update_layout
         )
 
-        self.bind(pos=update_layout)   # <-- add this: self.top changes when self.pos changes
+        self.bind(pos=update_layout)  
 
         Clock.schedule_once(
             lambda dt: update_layout(),
@@ -794,8 +809,153 @@ class Reconstruct(Screen):
     pass
 
 class ReviewSets(Screen):
-    pass
 
+    def on_enter(self):
+        self.load_review_sets()
+
+    def load_review_sets(self):
+        app = App.get_running_app()
+
+        review_sets = app.db.get_review_sets()
+
+        self.ids.reviewSetsContainer.clear_widgets()
+
+        for number, (review_set_id, name) in enumerate(review_sets, start=1):
+            entry = ReviewSetEntry(
+                number=number,
+                review_set_id=review_set_id,
+                name=name
+            )
+            self.ids.reviewSetsContainer.add_widget(entry)
+
+    def go_back_home(self, instance):
+        self.manager.transition.direction = "right"
+        self.manager.current = "home"
+
+
+class ReviewSetEntry(FloatLayout):
+
+    def __init__(self, number, review_set_id, name, **kwargs):
+        super().__init__(**kwargs)
+
+        self.review_set_id = review_set_id
+        self.name = name
+
+        self.size_hint_y = None
+
+        entryBackground = Image(
+            source="./assets/pageAssets/contentreview/entryBackground.png",
+            size_hint=(0.15, None),
+            pos_hint={"x": 0, "top": 1},
+            allow_stretch=True,
+            keep_ratio=True
+        )
+
+        entryBackground.bind(
+            width=lambda instance, value:
+            setattr(instance, "height", value * 37 / 40)
+        )
+
+        self.add_widget(entryBackground)
+
+        number_label = Label(
+            text=str(number),
+            font_name="./assets/fonts/PressStart2P.ttf",
+            font_size="11sp",
+            color=(1, 1, 1, 1),
+            size_hint=(None, None),
+            size=(40, 40),
+            pos_hint={"x": 0.01},
+            halign="center",
+            valign="middle"
+        )
+
+        self.add_widget(number_label)
+
+        name_label = Label(
+            text=name,
+            font_name="./assets/fonts/PixelifySans.ttf",
+            font_size="17sp",
+            color=(1, 0.749, 0.2, 1),
+            size_hint=(0.68, None),
+            pos_hint={"x": 0.16},
+            halign="left",
+            valign="middle"
+        )
+
+        name_label.bind(
+            width=lambda instance, value:
+            setattr(instance, "text_size", (value, None))
+        )
+
+        name_label.bind(
+            texture_size=lambda instance, value:
+            setattr(instance, "height", value[1])
+        )
+
+        self.add_widget(name_label)
+
+        delete_button = Button(
+            text="X",
+            font_name="./assets/fonts/PressStart2P.ttf",
+            font_size="12sp",
+            color=(1, 0.4, 0.4, 1),
+            size_hint=(None, None),
+            size=(dp(28), dp(28)),
+            pos_hint={"right": 0.97, "top": 1},
+            background_color=(0, 0, 0, 0),
+            background_normal="",
+            background_down=""
+        )
+
+        delete_button.bind(on_release=self.delete_entry)
+
+        self.add_widget(delete_button)
+
+        divider = Image(
+            source="./assets/pageAssets/contentreview/divider.png",
+            size_hint=(1.5, None),
+            pos_hint={"center_x": 0.5}
+        )
+
+        divider.bind(
+            width=lambda instance, value: setattr(
+                instance,
+                "height",
+                value * (3 / 323)
+            )
+        )
+
+        self.add_widget(divider)
+
+        def update_layout(*args):
+            number_label.top = self.top + dp(4)
+            name_label.top = self.top + dp(8)
+            divider.y = self.y + dp(8)
+
+            self.height = (
+                max(entryBackground.height, name_label.height)
+                + dp(15)
+            )
+
+        name_label.bind(
+            height=update_layout,
+            y=update_layout
+        )
+
+        self.bind(pos=update_layout)
+
+        Clock.schedule_once(lambda dt: update_layout(), 0)
+
+    def delete_entry(self, instance):
+        app = App.get_running_app()
+
+        app.db.delete_review_set(self.review_set_id)
+
+        print("Deleted Review Set:", self.review_set_id)
+
+        reviewsets = App.get_running_app().root.get_screen("reviewsets")
+        reviewsets.load_review_sets()
 class BingoGame(Screen):
     pass
 
@@ -861,6 +1021,10 @@ class Bingo(App):
         imagepreview.ids.photoBackButton.bind(
             on_release=imagepreview.take_photo_again
         )
+        
+        imagepreview.ids.retakeButton.bind(
+        on_release=imagepreview.take_photo_again
+        )
 
         imagepreview.ids.usePhotoButton.bind(
             on_release=imagepreview.use_photo
@@ -892,6 +1056,18 @@ class Bingo(App):
         
         contentreview.ids.conRevBackButton.bind(
             on_release=contentreview.go_back_manual
+        )
+        
+        contentreview.ids.addTermButton.bind(
+            on_release=contentreview.go_back_manual
+        )
+        
+        contentreview.ids.completeReviewerButton.bind(
+            on_release=contentreview.complete_reviewer
+        )
+
+        reviewsets.ids.reviewSetsBackButton.bind(
+            on_release=reviewsets.go_back_home
         )
 
         # add all pages
