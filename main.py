@@ -8,6 +8,10 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.metrics import dp, sp
 
+#AI
+import requests
+import json
+import threading
 
 # Kivy - Layouts
 from kivy.uix.boxlayout import BoxLayout
@@ -240,7 +244,7 @@ class CameraWidget(Image):
         if self.camera is not None:
             return
 
-        self.camera = cv2.VideoCapture(1)
+        self.camera = cv2.VideoCapture(2)
 
         self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1440)
