@@ -1,0 +1,18 @@
+A primary key is a field that uniquely identifies each record in the table.
+A primary key is unique and cannot have duplicated values.
+A foreign key is a field that refers to the primary key of another table.
+A database is an organized collection of data that is stored and accessed electronically.
+A table is made up of rows and columns that hold the records of the database.
+Each row in a table is called a record and each column is called a field.
+Culture affects perceptions because people interpret the world through shared values and beliefs.
+Culture is the set of shared values, beliefs, customs and behaviors of a group of people.
+Perception is the process by which people select, organize and interpret information from the environment.
+Communication is the process of sharing information, ideas and feelings between people.
+Values are the beliefs that guide how people judge what is right and what is wrong.
+A relational database stores data in tables that are related to each other through keys.
+A query is a request for data or information from a database table.
+The structured query language is used to create, read, update and delete data in a database.
+An index is a data structure that improves the speed of data retrieval in a table.
+Normalization is the process of organizing data to reduce redundancy and improve integrity.
+Social norms are the unwritten rules that guide the behavior of people in a group.
+Language is a system of symbols and rules that people use to communicate with each other.

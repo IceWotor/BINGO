@@ -1,3 +1,6 @@
+<Image>:
+    fit_mode: "contain"
+
 <HOME>:
     BoxLayout:
         orientation: "vertical"
@@ -16,7 +19,7 @@
                     size_hint_y: None
                     width: self.parent.width
                     height: self.texture_size[1] * (self.width / self.texture_size[0])
-                    keep_ratio: True
+                    fit_mode: "fill"
                     pos_hint: {"x": 0, "center_y": -3}
 
                 Image:
@@ -25,23 +28,20 @@
                     size_hint_y: None
                     width: self.parent.width
                     height: self.texture_size[1] * (self.width / self.texture_size[0])
-                    keep_ratio: True
+                    fit_mode: "fill"
                     pos_hint: {"x": 0, "center_y": -1}
 
-
-
-        #BINGO Title
+        # BINGO title
         Image:
             source: "./assets/pageAssets/home/BINGO.png"
             size_hint_y: None
             height: self.width / 1.6
-            allow_stretch: True
-            keep_ratio: True
-        
+            fit_mode: "contain"
+
         Widget:
             size_hint_y: None
             height: self.width / 2.6
-            
+
             FloatLayout:
                 size: self.parent.size
                 pos: self.parent.pos
@@ -52,8 +52,8 @@
                     size_hint_y: None
                     width: self.parent.width
                     height: self.texture_size[1] * (self.width / self.texture_size[0])
-                    keep_ratio: True
-                    pos_hint: {"x": 0, "center_y": -1.358}
+                    fit_mode: "fill"
+                    pos_hint: {"x": 0, "center_y": -1.6}
 
                 Image:
                     source: "./assets/pageAssets/home/homeBottom/checkered.png"
@@ -61,14 +61,18 @@
                     size_hint_y: None
                     width: self.parent.width
                     height: self.texture_size[1] * (self.width / self.texture_size[0])
-                    keep_ratio: True
-                    pos_hint: {"x": 0, "y": -2.2}
+                    fit_mode: "fill"
+                    pos_hint: {"x": 0, "y": -2.25}
 
+        
+        # BUTTON STACK: its height is exactly as tall as its buttons
         BoxLayout:
             orientation: "vertical"
-            spacing: 20
-            
-            # ScanButton
+            spacing: self.width * 0.03
+            size_hint_y: None
+            height: self.minimum_height - dp(125)
+
+            # Scan button
             Button:
                 id: scanAcademicMaterial_button
                 size_hint_x: 0.86
@@ -77,6 +81,7 @@
                 pos_hint: {"center_x": 0.5}
                 background_normal: "./assets/pageAssets/home/buttons/buttonDesign/scanButtonRectangle.png"
                 background_down: "./assets/pageAssets/home/buttons/buttonDesign/scanButtonRectangle_Pressed.png"
+                on_release: root.go_to_scan()
 
                 FloatLayout:
                     size: self.parent.size
@@ -85,38 +90,36 @@
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonIcons/camera.png"
                         size_hint: None, None
-                        size: "50dp", "50dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.16, self.parent.width * 0.16
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.07, "center_y": 0.52}
 
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonText/scanAcademicMaterial.png"
                         size_hint: None, None
-                        size: "175dp", "175dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.565, self.parent.width * 0.565
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.285, "center_y": 0.63}
 
                     Label:
                         text: "Scan or upload your notes and study \nmaterials"
-                        font_size: "9sp"
+                        font_size: self.parent.width * 0.029
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PixelifySans.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"x": 0.29, "center_y": 0.38}
-                    
+
                     Label:
                         text: ">"
-                        font_size: "13sp"
+                        font_size: self.parent.width * 0.042
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PressStart2P.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"x": 0.9, "center_y": 0.5}
 
-
-
-            #ManualButton
+            # Manual button
             Button:
                 id: manualEncoding_button
                 size_hint_x: 0.86
@@ -125,7 +128,8 @@
                 pos_hint: {"center_x": 0.5}
                 background_normal: "./assets/pageAssets/home/buttons/buttonDesign/manualButtonRectangle.png"
                 background_down: "./assets/pageAssets/home/buttons/buttonDesign/manualButtonRectangle_Pressed.png"
-                
+                on_release: root.go_to_manual()
+
                 FloatLayout:
                     size: self.parent.size
                     pos: self.parent.pos
@@ -133,36 +137,36 @@
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonIcons/pencil.png"
                         size_hint: None, None
-                        size: "67dp", "67dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.216, self.parent.width * 0.216
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.035, "center_y": 0.52}
 
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonText/manualEncoding.png"
                         size_hint: None, None
-                        size: "115dp", "115dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.371, self.parent.width * 0.371
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.285, "center_y": 0.58}
 
                     Label:
                         text: "Enter terms and define manually"
-                        font_size: "9sp"
+                        font_size: self.parent.width * 0.029
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PixelifySans.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"x": 0.29, "center_y": 0.44}
-                    
+
                     Label:
                         text: ">"
-                        font_size: "13sp"
+                        font_size: self.parent.width * 0.042
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PressStart2P.ttf"
                         size_hint: None, None
                         size: self.texture_size
-                        pos_hint: {"x": 0.9, "center_y": 0.5} 
+                        pos_hint: {"x": 0.9, "center_y": 0.5}
 
-            #ReviewSetsButton
+            # Review sets button
             Button:
                 id: ReviewSets_button
                 size_hint_x: 0.86
@@ -171,6 +175,7 @@
                 pos_hint: {"center_x": 0.5}
                 background_normal: "./assets/pageAssets/home/buttons/buttonDesign/reviewButtonRectangle.png"
                 background_down: "./assets/pageAssets/home/buttons/buttonDesign/reviewButtonRectangle_Pressed.png"
+                on_release: root.go_to_reviewset()
 
                 FloatLayout:
                     size: self.parent.size
@@ -179,58 +184,61 @@
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonIcons/folder.png"
                         size_hint: None, None
-                        size: "65dp", "65dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.21, self.parent.width * 0.21
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.037, "center_y": 0.52}
-                    
+
                     Image:
                         source: "./assets/pageAssets/home/buttons/buttonText/myReviewSets.png"
                         size_hint: None, None
-                        size: "115dp", "115dp"
-                        keep_ratio: True
+                        size: self.parent.width * 0.371, self.parent.width * 0.371
+                        fit_mode: "contain"
                         pos_hint: {"x": 0.285, "center_y": 0.58}
 
                     Label:
                         text: "View and manage your saved review sets"
-                        font_size: "9sp"
+                        font_size: self.parent.width * 0.029
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PixelifySans.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"x": 0.29, "center_y": 0.44}
-                    
+
                     Label:
                         text: ">"
-                        font_size: "13sp"
+                        font_size: self.parent.width * 0.042
                         color: 0, 0, 0, 1
                         font_name: "./assets/fonts/PressStart2P.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"x": 0.9, "center_y": 0.5}
-            
+
+        # Flexible spacer: soaks up extra height on taller phones
+        Widget:
+
+        # FOOTER: fixed shape, so the cat and other images stay put
         FloatLayout:
-            size: self.parent.size
-            pos: self.parent.pos
+            size_hint_y: None
+            height: self.width * 0.3
 
             Image:
                 source: "./assets/pageAssets/home/homeBottom/ball41.png"
                 size_hint: None, None
-                size: "75dp", "75dp"
-                keep_ratio: True
+                size: self.parent.width * 0.21, self.parent.width * 0.21
+                fit_mode: "contain"
                 pos_hint: {"x": 0.037, "center_y": 0.44}
 
             Image:
                 source: "./assets/pageAssets/home/homeBottom/books.png"
                 size_hint: None, None
-                size: "88dp", "88dp"
-                keep_ratio: True
+                size: self.parent.width * 0.245, self.parent.width * 0.245
+                fit_mode: "contain"
                 pos_hint: {"x": 0.72, "center_y": 0.44}
-            
+
             Button:
                 size_hint: None, None
-                size: "150dp", "30dp"
+                size: self.parent.width * 0.417, self.parent.width * 0.083
                 pos_hint: {"center_x": 0.5, "center_y": 0.4}
-
                 background_normal: "./assets/pageAssets/home/buttons/buttonDesign/idkButtonRectangle.png"
                 background_down: "./assets/pageAssets/home/buttons/buttonDesign/idkButtonRectangle_Pressed.png"
 
@@ -240,21 +248,19 @@
 
                     Label:
                         text: "Group 4"
-                        font_size: "6sp"
+                        font_size: self.parent.width * 0.04
                         font_name: "./assets/fonts/PressStart2P.ttf"
                         size_hint: None, None
                         size: self.texture_size
                         pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
-            
             Image:
                 source: "./assets/pageAssets/home/homeDesign/cat1.png"
                 size_hint: None, None
-                size: "75dp", "75dp"
-                keep_ratio: True
-                pos_hint: {"center_x": 0.5, "center_y": 2.99}
-
-<SCAN>
+                size: self.parent.width * 0.21, self.parent.width * 0.21
+                fit_mode: "contain"
+                pos_hint: {"center_x": 0.5, "center_y": 4.1}
+<SCAN>:
     BoxLayout:
         orientation: "vertical"
         canvas.before:
@@ -270,7 +276,7 @@
         FloatLayout:
             size_hint_y: None
             height: "40dp"
-            
+
             # Back Button
             Button:
                 id: scanBackButton
@@ -278,6 +284,7 @@
                 size: dp(60), dp(60)
                 background_color: 0, 0, 0, 0
                 pos_hint: {"x": 0.05, "center_y": 0.5}
+                on_release: root.go_back_home()
 
                 Image:
                     source: "./assets/icons/backButton.png"
@@ -286,7 +293,9 @@
         FloatLayout:
             FloatLayout:
                 orientation: "vertical"
-                size_hint: 0.95, 0.97
+                size_hint: None, None
+                width: min(self.parent.width * 0.95, self.parent.height * 0.97 / 1.9)
+                height: self.width * 1.9
                 pos_hint: {"center_x": 0.5, "y": 0.043}
 
                 canvas.before:
@@ -308,6 +317,8 @@
                         pos_hint: {"center_x": 0.53, "center_y": 0.65}
                         background_normal: "./assets/pageAssets/scan/cameraButton.png"
                         background_down: "./assets/pageAssets/scan/cameraButton.png"
+                        on_release: root.go_camera()
+
                     Image:
                         source: "./assets/pageAssets/scan/or.png"
                         size_hint: 0.6, None
@@ -320,87 +331,13 @@
                         pos_hint: {"center_x": 0.53, "center_y": 0.44}
                         background_normal: "./assets/pageAssets/scan/uploadButton.png"
                         background_down: "./assets/pageAssets/scan/uploadButton.png"
+                        on_release: root.go_upload()
+
                     Image:
                         source: "./assets/pageAssets/scan/supported.png"
                         size_hint: 0.6, None
                         height: self.width * (159/225)
                         pos_hint: {"center_x": 0.53, "center_y": 0.33}
-
-
-
-
-
-
-<CAMERASCAN>:
-    BoxLayout:
-        orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.047, 0, 0.129, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        Widget:
-            size_hint_y: None
-            height: "50dp"
-
-        FloatLayout:
-            size_hint_y: None
-            height: "40dp"
-            
-            # Back Button
-            Button:
-                id: camerascanBackButton
-                size_hint: None, None
-                size: dp(60), dp(60)
-                background_color: 0, 0, 0, 0
-                pos_hint: {"x": 0.05, "center_y": 0.5}
-
-                Image:
-                    source: "./assets/icons/backButton.png"
-                    size: self.parent.size
-                    pos: self.parent.pos
-        FloatLayout:
-            FloatLayout:
-                orientation: "vertical"
-                size_hint: 0.95, 0.97
-                pos_hint: {"center_x": 0.5, "y": 0.043}
-
-
-
-                CameraWidget:
-                    canvas.before:
-                        Color:
-                            rgba: 0.047, 0, 0.129, 1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
-                            
-                    id: camera
-                    size_hint: 0.95, None
-                    height: self.width * 16 / 9
-                    pos_hint: {"center_x": 0.502, "y": 0.08}
-
-                Image:
-                    source: "./assets/pageAssets/camerascan/cameraBorder.png"
-                    size_hint: 1.04, None
-                    height: self.width * 16 / 9
-                    fit_mode: "fill"
-                    pos_hint: {"center_x": 0.5, "center_y": 0.52}
-
-                Button:
-                    id: takephoto
-                    text: ""
-                    size_hint: 0.25, 0.25
-                    pos_hint: {"center_x": 0.5, "y": 0.02}
-                    background_color: 0, 0, 0, 0
-
-
-                    Image:
-                        source: "./assets/pageAssets/camerascan/takePhotoButton.png"
-                        size: self.parent.size
-                        pos: self.parent.pos
-
 
 <IMAGEPREVIEW>:
     BoxLayout:
@@ -418,7 +355,7 @@
         FloatLayout:
             size_hint_y: None
             height: "40dp"
-            
+
             # Back Button
             Button:
                 id: photoBackButton
@@ -426,6 +363,7 @@
                 size: dp(60), dp(60)
                 background_color: 0, 0, 0, 0
                 pos_hint: {"x": 0.05, "center_y": 0.5}
+                on_release: root.take_photo_again()
 
                 Image:
                     source: "./assets/icons/backButton.png"
@@ -447,7 +385,6 @@
                 fit_mode: "fill"
                 pos_hint: {"center_x": 0.5, "center_y": 0.62}
 
-
             Button:
                 id: usePhotoButton
                 text: ""
@@ -455,6 +392,7 @@
                 height: self.width * 9 / 16
                 background_color: 0, 0, 0, 0
                 pos_hint: {"center_x": 0.72, "y": 0.1}
+                on_release: root.use_photo()
 
                 Image:
                     source:"./assets/pageAssets/imagepreview/useImage.png"
@@ -468,14 +406,127 @@
                 height: self.width * 9 / 16
                 background_color: 0, 0, 0, 0
                 pos_hint: {"center_x": 0.25, "y": 0.11}
+                on_release: root.take_photo_again()
 
                 Image:
                     source:"./assets/pageAssets/imagepreview/retakeButton.png"
                     size: self.parent.size
                     pos: self.parent.pos
 
+<PROCESSING>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
-<TEXTPREVIEW>:
+        FloatLayout:
+            Label:
+                text: "Reading your notes..."
+                font_name: "./assets/fonts/PixelifySans.ttf"
+                font_size: "18sp"
+                color: 1, 1, 1, 1
+                size_hint: None, None
+                size: self.texture_size
+                pos_hint: {"center_x": 0.5, "center_y": 0.55}
+
+            Label:
+                text: "This may take a moment"
+                font_name: "./assets/fonts/PixelifySans.ttf"
+                font_size: "12sp"
+                color: 1, 1, 1, 0.6
+                size_hint: None, None
+                size: self.texture_size
+                pos_hint: {"center_x": 0.5, "center_y": 0.45}
+
+<EXTRACTEDCONTENT>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.047, 0, 0.129, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Widget:
+            size_hint_y: None
+            height: "50dp"
+
+        FloatLayout:
+
+            Image:
+                source: "./assets/pageAssets/extractedcontent/setContainer.png"
+                size_hint: 0.9, 1
+                allow_stretch: True
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+            ScrollView:
+                size_hint: 0.82, 0.75
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                bar_width: dp(0)
+
+                GridLayout:
+                    id: textEntriesContainer
+                    cols: 1
+                    spacing: dp(8)
+                    padding: dp(5)
+                    size_hint_y: None
+                    height: self.minimum_height
+
+            Label:
+                text: root.ocr_text
+                font_name: "./assets/fonts/PixelifySans.ttf"
+                font_size: "14sp"
+                color: 1, 1, 1, 1
+                size_hint: 0.8, None
+                text_size: self.width, None
+                halign: "center"
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+
+            Image:
+                source: "./assets/pageAssets/extractedcontent/topbar.png"
+                size_hint: 0.9, None
+                height: self.width * (589/373)
+                allow_stretch: True
+                pos_hint: {"center_x": 0.5, "center_y": 0.93}
+
+            Button:
+                text: "HOW?"
+                font_name: "./assets/fonts/PressStart2P.ttf"
+                font_size: "9sp"
+                size_hint: None, None
+                size: "60dp", "28dp"
+                pos_hint: {"right": 0.97, "center_y": 0.93}
+                on_release: root.open_report()
+
+            Button:
+                id: reviewTermsButton
+                size_hint: 0.89, None
+                height: self.width * (70 / 344)
+                pos_hint: {"center_x": 0.5, "center_y": 0.08}
+                background_normal: "./assets/pageAssets/manual/continueButton.png"
+                background_down: "./assets/pageAssets/manual/continueButton.png"
+                on_release: root.continue_to_manual()
+            
+            
+            Button:
+                text: "<"
+                font_name: "./assets/fonts/PressStart2P.ttf"
+                font_size: "14sp"
+                color: 1, 0.749, 0.2, 1
+                size_hint: None, None
+                size: dp(44), dp(44)
+                pos_hint: {"x": 0.03, "top": 0.98}
+                background_normal: ""
+                background_down: ""
+                background_color: 0, 0, 0, 0
+                on_release: root.back_to_scan()
+
+<REPORT>:
     BoxLayout:
         orientation: "vertical"
         canvas.before:
@@ -487,30 +538,30 @@
         Widget:
             size_hint_y: None
             height: "50dp"
-
         FloatLayout:
             size_hint_y: None
             height: "40dp"
-            
-            # Back Button
             Button:
-                id: textBackButton
+                id: reportBackButton
                 size_hint: None, None
                 size: dp(60), dp(60)
                 background_color: 0, 0, 0, 0
                 pos_hint: {"x": 0.05, "center_y": 0.5}
-
+                on_release: root.go_back()
                 Image:
                     source: "./assets/icons/backButton.png"
                     size: self.parent.size
                     pos: self.parent.pos
-        FloatLayout:
-            Label:
-                text: root.ocr_text
-                font_name: "./assets/fonts/PixelifySans.ttf"
-                font_size: "12sp"
-                color: 1, 1, 1, 1
-                text_size: self.width, None
+        ScrollView:
+            bar_width: dp(4)
+            GridLayout:
+                id: reportContainer
+                cols: 1
+                spacing: dp(10)
+                padding: dp(12)
+                size_hint_y: None
+                height: self.minimum_height
+
 <MANUAL>:
     BoxLayout:
         orientation: "vertical"
@@ -520,7 +571,7 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-        
+
         Widget:
             size_hint_y: None
             height: "50dp"
@@ -528,7 +579,7 @@
         FloatLayout:
             size_hint_y: None
             height: "40dp"
-            
+
             # Back Button
             Button:
                 id: manualBackButton
@@ -545,7 +596,9 @@
         FloatLayout:
             FloatLayout:
                 orientation: "vertical"
-                size_hint: 0.95, 0.97
+                size_hint: None, None
+                width: min(self.parent.width * 0.95, self.parent.height * 0.97 / 1.9)
+                height: self.width * 1.9
                 pos_hint: {"center_x": 0.5, "y": 0.043}
 
                 canvas.before:
@@ -572,12 +625,12 @@
                         size_hint: None, None
                         width: "50dp"
                         pos_hint: {"x": 0.13, "center_y": 1}
-                    
+
                     Image:
                         source: "./assets/pageAssets/manual/termInput.png"
-                        size_hint: 0.87, None
-                        pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                    
+                        size_hint: 1, 0.9
+                        pos_hint: {"center_x": 0.5, "center_y": 0.58}
+
                     TextInput:
                         id: termInput
                         size_hint: 0.7, None
@@ -594,7 +647,6 @@
                         background_color: 0, 0, 0, 0
                         pos_hint: {"center_x": 0.5, "center_y": 0.4}
 
-                
                 #Definition
                 FloatLayout:
                     size_hint_y: None
@@ -606,7 +658,7 @@
                         size_hint: None, None
                         width: "100dp"
                         pos_hint: {"x": 0.13, "center_y": 1.25}
-                    
+
                     Image:
                         source: "./assets/pageAssets/manual/definitionInput.png"
                         size_hint: 1, 0.9
@@ -616,7 +668,7 @@
                         id: definitionInput
                         size_hint: 0.7, None
                         height: dp(120)
-                        
+
                         font_name: "./assets/fonts/PixelifySans.ttf"
                         font_size: "16sp"
                         foreground_color: 0, 0, 0, 1
@@ -628,24 +680,38 @@
 
                         background_color: 1, 0, 0, 0
                         pos_hint: {"center_x": 0.5, "center_y": 0.8}
-                
+
                 # Add Terms
+
+                
                 Button:
                     id: addTermButton
-                    size_hint: 0.63, None
+                    size_hint: 0.5, None
                     height: self.width * ( 71 / 232 )
-
                     background_normal: "./assets/pageAssets/manual/addTermButton.png"
                     background_down: "./assets/pageAssets/manual/addTermButton.png"
-                    
-                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                
+                    pos_hint: {"center_x": 0.32, "center_y": 0.5}
+
+                Button:
+                    id: scanMoreButton
+                    text: "SCAN"
+                    font_name: "./assets/fonts/PressStart2P.ttf"
+                    font_size: "11sp"
+                    color: 0.047, 0, 0.129, 1
+                    size_hint: 0.3, None
+                    height: addTermButton.height
+                    pos_hint: {"center_x": 0.76, "center_y": 0.5}
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0.25, 0.78, 0.55, 1
+                    on_release: root.scan_more()
+
                 Image:
                     source: "./assets/pageAssets/manual/divider.png"
                     size_hint: 0.8, None
                     height: self.width * (3/323)
                     pos_hint: {"center_x": 0.5, "center_y": 0.44}
-                
+
                 Image:
                     source: "./assets/pageAssets/manual/currentEntries.png"
                     size_hint: 0.7, None
@@ -659,9 +725,8 @@
                     pos_hint: {"center_x": 0.5, "center_y": 0.28}
                 ScrollView:
                     size_hint: 0.75, 0.2
-                    pos_hint: {"x": 0.12, "center_y": 0.28}    
+                    pos_hint: {"x": 0.12, "center_y": 0.28}
                     bar_width: dp(0)
-
 
                     GridLayout:
                         id: entriesContainer
@@ -670,8 +735,6 @@
                         padding: dp(5)
                         size_hint_y: None
                         height: self.minimum_height
-                        bar_width: dp(0)
-
 
                 Label:
                     id: entryCountLabel
@@ -679,7 +742,7 @@
                     font_name: "./assets/fonts/PressStart2P.ttf"
                     font_size: "12sp"
                     pos_hint: {"x":0.302, "center_y":0.41}
-                
+
                 Button:
                     id: continueButton
                     size_hint: 0.89, None
@@ -732,8 +795,7 @@
         pos_hint:
             {"center_x": 0.73, "center_y": 0.2}
 
-
-<CONTENTREVIEW>
+<CONTENTREVIEW>:
     BoxLayout:
         orientation: "vertical"
         canvas.before:
@@ -742,7 +804,7 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-        
+
         Widget:
             size_hint_y: None
             height: "50dp"
@@ -776,13 +838,12 @@
                 cursor_color: 0, 0, 0, 1
                 halign: "left"
 
-
                 hint_text: "ENTER SETNAME"
                 hint_text_color: 1, 1, 1, 0.5
 
                 background_color: 0, 0, 0, 0
                 pos_hint: {"center_x": 0.44, "center_y": 0.96}
-            
+
             Button:
                 id: edit_button
                 size_hint: 0.2, None
@@ -794,7 +855,7 @@
                     source: "./assets/pageAssets/contentreview/editButton.png"
                     size: self.parent.size
                     pos: self.parent.pos
-            
+
             Image:
                 source:"./assets/pageAssets/contentreview/setContainer.png"
                 size_hint: .9, None
@@ -802,7 +863,6 @@
                 allow_stretch: "true"
                 pos_hint: {"center_x": 0.5, "center_y": 0.55}
 
-            
             ScrollView:
                 size_hint: 0.82, 0.75
                 pos_hint: {"center_x": 0.5, "center_y": 0.55}
@@ -815,7 +875,7 @@
                     padding: dp(5)
                     size_hint_y: None
                     height: self.minimum_height
-            
+
             Button:
                 id: addTermButton
                 size_hint: 0.59, None
@@ -823,9 +883,9 @@
 
                 background_normal: "./assets/pageAssets/contentreview/addTermButton.png"
                 background_down: "./assets/pageAssets/contentreview/addTermButton.png"
-                
+
                 pos_hint: {"center_x": 0.5, "center_y": 0.22}
-            
+
             Button:
                 id: completeReviewerButton
                 size_hint: 0.89, None
@@ -833,7 +893,7 @@
 
                 background_normal: "./assets/pageAssets/contentreview/completeReviewerButton.png"
                 background_down: "./assets/pageAssets/contentreview/completeReviewerButton.png"
-                
+
                 pos_hint: {"center_x": 0.5, "center_y":0.12}
 
 <REVIEWSETS>:
@@ -868,7 +928,6 @@
 
         FloatLayout:
 
-                
             Image:
                 source: "./assets/pageAssets/contentreview/setContainer.png"
                 size_hint: 0.9, None
@@ -888,6 +947,7 @@
                     padding: dp(5)
                     size_hint_y: None
                     height: self.minimum_height
+
             Label:
                 text: "REVIEW SETS"
                 font_size: "22sp"
@@ -896,15 +956,3 @@
                 size_hint: None, None
                 size: self.texture_size
                 pos_hint: {"center_x": 0.5, "center_y": 1}
-
-
-        
-
-
-
-
-
-        
-
-
-        
