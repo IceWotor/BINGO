@@ -28,8 +28,10 @@ from reconstruction.textedit import (words_to_text, text_to_words,words_after_re
 import phone_io
 from reconstruction import ocr_engine
 import re
+import random
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from reconstruction.damage import WEIGHTS, GAP_K, GAP_MID
@@ -611,8 +613,11 @@ class ContentReview(Screen):
         reviewsets = self.manager.get_screen("reviewsets")
         reviewsets.load_review_sets()
 
+        # Start Bingo using the review set that was just completed.
+        game = self.manager.get_screen("bingogame")
+        game.start_game(self.review_set_id, name)
         self.manager.transition.direction = "left"
-        self.manager.current = "reviewsets"
+        self.manager.current = "bingogame"
 
 
 class ContentReviewEntry(FloatLayout):
@@ -927,7 +932,163 @@ class ReviewSetEntry(FloatLayout):
 
 
 class BingoGame(Screen):
-    pass
+    """Term-matching Bingo game based on the completed review set."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.review_set_id = None
+        self.terms = []
+        self.question_order = []
+        self.question_index = 0
+        self.score = 0
+        self.streak = 0
+        self._answered = False
+
+        with self.canvas.before:
+            Color(0.047, 0, 0.129, 1)
+            self._game_bg = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self._update_bg, size=self._update_bg)
+
+        root = BoxLayout(orientation="vertical", padding=(dp(16), dp(18)), spacing=dp(8))
+        top = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
+        back = Button(text="‹", font_name=FONT_PX, font_size="18sp", color=(1, 0.2, 0.8, 1),
+                      size_hint_x=None, width=dp(42), background_normal="", background_color=(0,0,0,0))
+        back.bind(on_release=self.go_back)
+        top.add_widget(back)
+        top.add_widget(Label(text="BINGO!", font_name=FONT_PX, font_size="16sp", color=AMBER))
+        top.add_widget(Widget(size_hint_x=None, width=dp(42)))
+        root.add_widget(top)
+
+        self.stats_label = Label(text="⭐ Score: 0 / 0       Question 1 / 1", font_name=FONT,
+                                 font_size="12sp", size_hint_y=None, height=dp(30))
+        root.add_widget(self.stats_label)
+        self.definition_label = Label(text="Complete a reviewer to start playing.", font_name=FONT,
+                                      font_size="14sp", halign="center", valign="middle",
+                                      size_hint_y=None, height=dp(110), color=(1,1,1,1))
+        self.definition_label.bind(size=lambda w, size: setattr(w, "text_size", (size[0]-dp(16), size[1])))
+        with self.definition_label.canvas.before:
+            Color(0.10, 0.06, 0.25, 1)
+            self._definition_bg = RoundedRectangle(pos=self.definition_label.pos,
+                                                    size=self.definition_label.size, radius=[dp(12)])
+        self.definition_label.bind(pos=self._update_definition_bg, size=self._update_definition_bg)
+        root.add_widget(self.definition_label)
+
+        self.grid = GridLayout(cols=3, spacing=dp(7), padding=dp(4), size_hint_y=0.68)
+        root.add_widget(self.grid)
+        self.feedback_label = Label(text="", font_name=FONT, font_size="13sp", size_hint_y=None, height=dp(42))
+        root.add_widget(self.feedback_label)
+        self.streak_label = Label(text="Streak: 0", font_name=FONT_PX, font_size="10sp",
+                                  color=(0.7, 0.4, 1, 1), size_hint_y=None, height=dp(30))
+        root.add_widget(self.streak_label)
+        self.add_widget(root)
+
+    def _update_bg(self, *args):
+        self._game_bg.pos, self._game_bg.size = self.pos, self.size
+
+    def _update_definition_bg(self, *args):
+        self._definition_bg.pos = self.definition_label.pos
+        self._definition_bg.size = self.definition_label.size
+
+    def go_back(self, *args):
+        self.manager.transition.direction = "right"
+        self.manager.current = "reviewsets"
+
+    def start_game(self, review_set_id, name=""):
+        app = App.get_running_app()
+        self.review_set_id = review_set_id
+        self.terms = [(term, definition) for _, term, definition in app.db.get_terms(review_set_id)
+                      if term.strip() and definition.strip()]
+        self.question_order = list(range(len(self.terms)))
+        random.shuffle(self.question_order)
+        self.question_index = 0
+        self.score = 0
+        self.streak = 0
+        self._answered = False
+        self.feedback_label.text = ""
+        if not self.terms:
+            self.definition_label.text = "This reviewer has no terms yet. Go back and add some first."
+            self.grid.clear_widgets()
+            self.stats_label.text = "Score: 0 / 0"
+            self.streak_label.text = "Streak: 0"
+            return
+        self._show_question()
+
+    def _show_question(self):
+        if self.question_index >= len(self.question_order):
+            self.definition_label.text = "REVIEW COMPLETE!\nFinal score: %d / %d" % (self.score, len(self.terms))
+            self.grid.clear_widgets()
+            again = Button(text="PLAY AGAIN", font_name=FONT_PX, font_size="11sp", color=AMBER,
+                           background_normal="", background_color=(0.22, 0.08, 0.55, 1))
+            again.bind(on_release=lambda *_: self.start_game(self.review_set_id))
+            back = Button(text="BACK TO REVIEW SETS", font_name=FONT, font_size="12sp", color=(1,1,1,1),
+                          background_normal="", background_color=(0.22, 0.08, 0.55, 1))
+            back.bind(on_release=self.go_back)
+            self.grid.add_widget(again)
+            self.grid.add_widget(back)
+            self.feedback_label.text = ""
+            self.stats_label.text = "Score: %d / %d" % (self.score, len(self.terms))
+            self.streak_label.text = "Best play is continuous correct answers!"
+            return
+
+        self._answered = False
+        correct_index = self.question_order[self.question_index]
+        correct_term, definition = self.terms[correct_index]
+        self.definition_label.text = definition
+        self.stats_label.text = "⭐ Score: %d / %d       Question %d / %d" % (
+            self.score, len(self.terms), self.question_index + 1, len(self.terms))
+        self.streak_label.text = "Streak: %d" % self.streak
+        self.feedback_label.text = "Tap the term that matches the definition."
+
+        distractors = [item for i, item in enumerate(self.terms) if i != correct_index]
+        random.shuffle(distractors)
+        options = [(correct_term, True)] + [(term, False) for term, _ in distractors[:7]]
+        while len(options) < 8:
+            options.append(("—", False))
+        random.shuffle(options)
+        self.grid.clear_widgets()
+        for index, (term, is_correct) in enumerate(options):
+            if index == 4:
+                free = Label(text="⭐\nFREE!", font_name=FONT_PX, font_size="10sp", color=AMBER)
+                self.grid.add_widget(free)
+            if term == "—":
+                btn = Button(text=term, disabled=True)
+            else:
+                btn = Button(text=term, font_name=FONT, font_size="11sp", color=(0.78,0.65,1,1),
+                             background_normal="", background_down="",
+                             background_color=(0.10,0.04,0.30,1),
+                             border=(dp(2), dp(2), dp(2), dp(2)))
+                btn.bind(on_release=lambda instance, ok=is_correct, answer=correct_term: self.check_answer(instance, ok, answer))
+            self.grid.add_widget(btn)
+
+    def check_answer(self, button, is_correct, correct_term):
+        if self._answered:
+            return
+        self._answered = True
+        for child in self.grid.children:
+            if isinstance(child, Button):
+                child.disabled = True
+        if is_correct:
+            self.score += 1
+            self.streak += 1
+            button.background_color = (0.05, 0.45, 0.30, 1)
+            self.feedback_label.text = "✓ Correct!  " + correct_term
+            self.feedback_label.color = (0.25, 1, 0.65, 1)
+        else:
+            self.streak = 0
+            button.background_color = (0.55, 0.08, 0.18, 1)
+            self.feedback_label.text = "Incorrect! Answer: " + correct_term
+            self.feedback_label.color = (1, 0.3, 0.4, 1)
+            for child in self.grid.children:
+                if isinstance(child, Button) and child.text == correct_term:
+                    child.background_color = (0.05, 0.45, 0.30, 1)
+        self.streak_label.text = "Streak: %d" % self.streak
+        self.stats_label.text = "⭐ Score: %d / %d       Question %d / %d" % (
+            self.score, len(self.terms), self.question_index + 1, len(self.terms))
+        Clock.schedule_once(self._next_question, 1.0)
+
+    def _next_question(self, dt):
+        self.question_index += 1
+        self._show_question()
 
 
 class Result(Screen):
@@ -1078,6 +1239,7 @@ class Meter(Widget):
         self._track.pos, self._track.size = self.pos, self.size
         self._fill.pos = self.pos
         self._fill.size = (self.width * self.value, self.height)
+
 
 
 class Card(BoxLayout):

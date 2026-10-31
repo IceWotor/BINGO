@@ -1,6 +1,6 @@
 @echo off
 set ADB=C:\platform-tools\adb.exe
-set PKG=org.bingo.bingo
+set PKG=org.group4.bingo
 
 %ADB% shell rm -rf /data/local/tmp/src
 %ADB% shell mkdir -p /data/local/tmp/src
