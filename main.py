@@ -35,6 +35,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 
+from kivy.uix.carousel import Carousel
+
 from reconstruction.pair_state import Pair
 from reconstruction.pair_ui import PairCard
 
@@ -44,9 +46,11 @@ from reconstruction.report import build_report_blocks, build_how_blocks, esc
 from reconstruction.pairs import split_entries
 from extracted_text import ExtractedText
 
+from processing_screen import ProcessingScreen
 from setup_screen import BingoSetup
 from game_result import GameResult
 from bingo_game import BingoGame
+from reviewsets_screen import ReviewSets
 
 class Database:
 
@@ -100,6 +104,16 @@ class Database:
             "SELECT COUNT(*) FROM terms WHERE review_set_id = ?",
             (review_set_id,))
         return cursor.fetchone()[0]
+
+    def replace_terms(self, review_set_id, terms):
+        """Swap every term of a set for `terms` ([{"term":..., "definition":...}])."""
+        self.cursor.execute(
+            "DELETE FROM terms WHERE review_set_id = ?", (review_set_id,))
+        for item in terms:
+            self.cursor.execute(
+                "INSERT INTO terms (review_set_id, term, definition) VALUES (?, ?, ?)",
+                (review_set_id, item["term"], item["definition"]))
+        self.connection.commit()
 
     def delete_term(self, term_id):
         self.cursor.execute("DELETE FROM terms WHERE id = ?", (term_id,))
@@ -162,42 +176,112 @@ class Scan(Screen):
         phone_io.take_photo(self._on_image)
 
     def go_upload(self):
-        phone_io.pick_image(self._on_image)
+        phone_io.pick_images(self._on_images)
 
     @mainthread
-    def _on_image(self, path):
+    def _on_image(self, path):                 # camera: one photo
         if not path:
-            return                      # cancelled or failed
-        preview = self.manager.get_screen("imagepreview")
-        preview.image_path = path
-        preview.image_name = phone_io.last_name or os.path.basename(path)
+            return                              # cancelled or failed
+        self._open_preview([path], [phone_io.last_name or os.path.basename(path)])
+
+    @mainthread
+    def _on_images(self, items):               # upload: [(path, name), ...]
+        if not items:
+            return                              # cancelled or failed
+        self._open_preview([p for p, _ in items], [n for _, n in items])
+
+    def _open_preview(self, paths, names):
+        self.manager.get_screen("imagepreview").set_images(paths, names)
         self.manager.transition.direction = "left"
         self.manager.current = "imagepreview"
-        
-class ImagePreview(Screen):
 
-    image_path = ""
+class ImagePreview(Screen):
+    image_path = ""            # first photo (kept for the rest of the app)
     image_name = ""
-    
+    image_paths = []
+    image_names = []
+    _carousel = None
+    _badge = None
+
+    def set_images(self, paths, names):
+        self.image_paths, self.image_names = list(paths), list(names)
+        self.image_path, self.image_name = paths[0], names[0]
+
+    def source_label(self):
+        """Name shown on the Extracted Text page."""
+        name = self.image_name or os.path.basename(self.image_path)
+        n = len(self.image_paths)
+        return name if n <= 1 else "%s (+%d more)" % (name, n - 1)
+
     def take_photo_again(self):
         self.manager.transition.direction = "right"
         self.manager.current = "scan"
 
     def on_enter(self):
-        self.ids.preview_image.source = self.image_path
-        self.ids.preview_image.reload()
+        self._build_carousel()
+
+    def _build_carousel(self):
+        ref = self.ids.preview_image            # the old single image, now hidden
+        parent = ref.parent
+        if self._carousel is not None:
+            parent.remove_widget(self._carousel)
+        ref.opacity = 0
+
+        car = Carousel(direction="right", loop=False, anim_move_duration=0.25,
+                       size_hint=(0.76, None), pos_hint={"center_x": 0.5, "center_y": 0.62})
+        car.bind(width=lambda i, w: setattr(i, "height", w * 16 / 9))
+        for path in (self.image_paths or [self.image_path]):
+            car.add_widget(Image(source=path, fit_mode="contain", nocache=True))
+        car.bind(index=self._update_badge)
+
+        # index at the end of the list = drawn first, so the frame border stays on top
+        parent.add_widget(car, index=len(parent.children))
+        self._carousel = car
+        self._update_badge()
+
+    def _update_badge(self, *args):
+        car = self._carousel
+        n = len(car.slides) if car is not None else 0
+        badge = self._count_badge()
+        if n > 1:
+            badge.text = "%d / %d  (swipe)" % ((car.index or 0) + 1, n)
+        badge.opacity = 1 if n > 1 else 0
+
+    def _count_badge(self):
+        if self._badge is None:
+            lbl = Label(text="", font_name="./assets/fonts/PixelifySans.ttf", font_size="12sp",
+                        color=(1, 0.749, 0.2, 1), size_hint=(None, None),
+                        size=(dp(160), dp(26)),
+                        pos_hint={"center_x": 0.5, "center_y": 0.935})
+            with lbl.canvas.before:
+                Color(0.047, 0, 0.129, 0.8)
+                bg = RoundedRectangle(radius=[dp(8)])
+            lbl.bind(pos=lambda i, v: setattr(bg, "pos", i.pos),
+                     size=lambda i, v: setattr(bg, "size", i.size))
+            self.ids.preview_image.parent.add_widget(lbl)
+            self._badge = lbl
+        return self._badge
 
     def use_photo(self):
         self.manager.transition.direction = "left"
         self.manager.current = "processing"
-
-class Processing(Screen):
-    """Loading screen: OCR, damage detection and pairing, then the Extracted Text page."""
+        
+        
+class Processing(ProcessingScreen):
+    """Loading screen: OCR (one or more photos), damage detection and pairing, then Extracted Text."""
 
     def on_enter(self):
-        path = self.manager.get_screen("imagepreview").image_path
+        self.start()
+        preview = self.manager.get_screen("imagepreview")
+        self._paths = list(preview.image_paths or [preview.image_path])
+        self._words, self._has_conf, self._ocr_n = [], False, 0
+        self._ocr_next()
+
+    def _ocr_next(self, *args):
         try:
-            ocr_engine.run_ocr_async(path, self._on_ocr)
+            ocr_engine.run_ocr_async(self._paths[self._ocr_n], self._on_ocr)
+            if self._ocr_n == 0:
+                self.step_done(1)               # image decoded, handed to OCR
         except Exception:
             import traceback
             traceback.print_exc()
@@ -208,7 +292,21 @@ class Processing(Screen):
             print("OCR failed:", error)
             self._failed("Could not read any text from this photo.")
             return
-        threading.Thread(target=self._detect, args=(words, has_conf), daemon=True).start()
+        # put this photo's lines after the previous photos' lines
+        base = max((w.line for w in self._words), default=-1) + 1
+        for w in words:
+            w.line += base
+        self._words.extend(words)
+        self._has_conf = self._has_conf or has_conf
+        self._ocr_n += 1
+        if self._ocr_n < len(self._paths):
+            Clock.schedule_once(self._ocr_next, 0)      # next photo
+            return
+        for i, w in enumerate(self._words):
+            w.idx = i
+        self.step_done(2)                               # text extracted
+        threading.Thread(target=self._detect, args=(self._words, self._has_conf),
+                         daemon=True).start()
 
     def _detect(self, words, has_conf):
         try:
@@ -232,9 +330,17 @@ class Processing(Screen):
 
     @mainthread
     def _show(self, entries, det):
-        preview = self.manager.get_screen("imagepreview")
-        name = preview.image_name or os.path.basename(preview.image_path)
-        self.manager.get_screen("extractedtext").load(entries, det, name)
+        try:
+            preview = self.manager.get_screen("imagepreview")
+            self.manager.get_screen("extractedtext").load(entries, det, preview.source_label())
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            self._failed("Could not show the extracted text.")
+            return
+        self.finish(self._go_extracted)
+
+    def _go_extracted(self):
         self.manager.transition.direction = "left"
         self.manager.current = "extractedtext"
         
@@ -249,13 +355,32 @@ class ExtractedContent(Screen):
     source_name = StringProperty("")
     has_incomplete = BooleanProperty(False)
     cards = None
+    edit_set_id = None      # review set being edited (None = pairs came from a scan)
 
     def back_to_scan(self):
+        self.go_back()
+
+    def go_back(self):
         self.manager.transition.direction = "right"
-        self.manager.current = "extractedtext"
+        self.manager.current = ("contentreview" if self.edit_set_id is not None
+                                else "extractedtext")
+
+    def load_set(self, review_set_id, name):
+        """Open a saved review set here, so its pairs can be edited / reconstructed
+        like freshly scanned ones."""
+        from types import SimpleNamespace
+        app = App.get_running_app()
+        entries = []
+        for _, term, definition in app.db.get_terms(review_set_id):
+            words = text_to_words([], definition)       # typed words: trusted until edited
+            entries.append(SimpleNamespace(term=term, def_words=words, det=None))
+        self.load_pairs(entries, name)
+        self.edit_set_id = review_set_id
+        self.loaded_entries = None      # a later scan must reload its own pairs
 
     def load_pairs(self, entries, filename=""):
         os.chdir(BASE_DIR)
+        self.edit_set_id = None
         self.source_name = filename
         box = self.ids.textEntriesContainer
         box.clear_widgets()
@@ -296,6 +421,9 @@ class ExtractedContent(Screen):
                 terms.append({"term": term, "definition": definition})
         if not terms:
             _notice("Nothing to add yet. Each pair needs a term and a definition.")
+            return
+        if self.edit_set_id is not None:
+            replace_set_terms(self.manager, self.edit_set_id, terms)
             return
         send_to_manual(self.manager, terms)
         
@@ -437,8 +565,10 @@ class Manual(Screen):
         self.manager.current = "scan"
 
     def go_to_content_review(self, instance):
-        if self.review_set_id is None:
-            print("No review set selected.")
+        app = App.get_running_app()
+        if (self.review_set_id is None
+                or app.db.get_term_count(self.review_set_id) == 0):
+            _notice("No Current Entries")
             return
 
         content_review = self.manager.get_screen("contentreview")
@@ -534,8 +664,13 @@ class ContentReview(Screen):
 
     review_set_id = None
 
-    def printEdit(self, instance):
-        print("Edit works")
+    def go_edit(self, instance):
+        if self.review_set_id is None:
+            return
+        name = self.ids.reviewSetName.text.strip() or "Untitled Review Set"
+        self.manager.get_screen("extractedcontent").load_set(self.review_set_id, name)
+        self.manager.transition.direction = "right"
+        self.manager.current = "extractedcontent"
 
     def go_back_manual(self, instance):
         self.manager.transition.direction = "right"
@@ -753,143 +888,6 @@ class TextPreviewEntry(FloatLayout):
         Clock.schedule_once(lambda dt: update_layout(), 0)
 
 
-class ReviewSets(Screen):
-
-    def on_enter(self):
-        self.load_review_sets()
-
-    def load_review_sets(self):
-        app = App.get_running_app()
-        review_sets = app.db.get_review_sets()
-
-        self.ids.reviewSetsContainer.clear_widgets()
-
-        for number, (review_set_id, name) in enumerate(review_sets, start=1):
-            entry = ReviewSetEntry(
-                number=number, review_set_id=review_set_id, name=name)
-            self.ids.reviewSetsContainer.add_widget(entry)
-
-    def open_review_set(self, review_set_id, name):
-        manual = self.manager.get_screen("manual")
-        manual.load_existing_set(review_set_id, name)
-        self.manager.transition.direction = "left"
-        self.manager.current = "manual"
-
-    def go_back_home(self, instance):
-        self.manager.transition.direction = "right"
-        self.manager.current = "home"
-
-
-class ReviewSetEntry(FloatLayout):
-
-    def __init__(self, number, review_set_id, name, **kwargs):
-        super().__init__(**kwargs)
-
-        self.review_set_id = review_set_id
-        self.name = name
-
-        self.size_hint_y = None
-
-        entryBackground = Image(
-            source="./assets/pageAssets/contentreview/entryBackground.png",
-            size_hint=(0.15, None),
-            pos_hint={"x": 0, "top": 1},
-            fit_mode="contain",
-        )
-        entryBackground.bind(
-            width=lambda instance, value: setattr(instance, "height", value * 37 / 40))
-        self.add_widget(entryBackground)
-
-        number_label = Label(
-            text=str(number),
-            font_name="./assets/fonts/PressStart2P.ttf",
-            font_size="11sp",
-            color=(1, 1, 1, 1),
-            size_hint=(None, None),
-            size=(dp(40), dp(40)),
-            pos_hint={"x": 0.01},
-            halign="center",
-            valign="middle",
-            
-        )
-        self.add_widget(number_label)
-
-        name_label = Label(
-            text=name,
-            font_name="./assets/fonts/PixelifySans.ttf",
-            font_size="17sp",
-            color=(1, 0.749, 0.2, 1),
-            size_hint=(0.68, None),
-            pos_hint={"x": 0.16},
-            halign="left",
-            valign="middle"
-        )
-        name_label.bind(
-            width=lambda instance, value: setattr(instance, "text_size", (value, None)))
-        name_label.bind(
-            texture_size=lambda instance, value: setattr(instance, "height", value[1]))
-        self.add_widget(name_label)
-
-        delete_button = Button(
-            text="X",
-            font_name="./assets/fonts/PressStart2P.ttf",
-            font_size="12sp",
-            color=(1, 0.4, 0.4, 1),
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
-            pos_hint={"right": 0.97, "top": 1},
-            background_color=(0, 0, 0, 0),
-            background_normal="",
-            background_down=""
-        )
-        delete_button.bind(on_release=self.delete_entry)
-        self.add_widget(delete_button)
-        self.delete_button = delete_button
-
-        divider = Image(
-            source="./assets/pageAssets/contentreview/divider.png",
-            size_hint=(1.5, None),
-            pos_hint={"center_x": 0.5}
-        )
-        divider.bind(
-            width=lambda instance, value: setattr(instance, "height", value * (3 / 323)))
-        self.add_widget(divider)
-
-        def update_layout(*args):
-            number_label.top = self.top + dp(4)
-            name_label.top = self.top + dp(8)
-            divider.y = self.y + dp(8)
-            self.height = max(entryBackground.height, name_label.height) + dp(15)
-
-        name_label.bind(height=update_layout, y=update_layout)
-        self.bind(pos=update_layout)
-
-        Clock.schedule_once(lambda dt: update_layout(), 0)
-
-    def on_touch_up(self, touch):
-        if super().on_touch_up(touch):
-            return True
-
-        if self.delete_button.collide_point(*touch.pos):
-            return False
-
-        moved = ((touch.x - touch.ox) ** 2 + (touch.y - touch.oy) ** 2) ** 0.5
-        if (self.collide_point(*touch.pos)
-                and self.collide_point(touch.ox, touch.oy)
-                and moved < dp(10)):
-            reviewsets = App.get_running_app().root.get_screen("reviewsets")
-            reviewsets.open_review_set(self.review_set_id, self.name)
-            return True
-
-        return False
-
-    def delete_entry(self, instance):
-        app = App.get_running_app()
-        app.db.delete_review_set(self.review_set_id)
-        reviewsets = app.root.get_screen("reviewsets")
-        reviewsets.load_review_sets()
-
-
 class Result(Screen):
     pass
 
@@ -956,6 +954,21 @@ def send_to_manual(manager, terms):
     manual.ids.entryCountLabel.text = str(app.db.get_term_count(review_set_id))
     manager.transition.direction = "left"
     manager.current = "manual"
+def replace_set_terms(manager, review_set_id, terms):
+    """After editing a saved set on the Extracted Content page: overwrite that set."""
+    app = App.get_running_app()
+    manual = manager.get_screen("manual")
+    app.db.replace_terms(review_set_id, terms)
+    manual.review_set_id = review_set_id
+    manual.ids.entriesContainer.clear_widgets()
+    for term_id, term, definition in app.db.get_terms(review_set_id):
+        manual.ids.entriesContainer.add_widget(
+            TermEntry(term_id=term_id, term=term, definition=definition))
+    manual.ids.entryCountLabel.text = str(app.db.get_term_count(review_set_id))
+    manager.transition.direction = "left"
+    manager.current = "manual"
+
+
 class PageScreen(Screen):
     """Top bar (back / title / optional right button), scrolling body, bottom buttons."""
 
@@ -1101,7 +1114,7 @@ class Bingo(App):
         bingosetup = BingoSetup(name="bingosetup")
         gameresult = GameResult(name="gameresult")
 
-        contentreview.ids.edit_button.bind(on_release=contentreview.printEdit)
+        contentreview.ids.edit_button.bind(on_release=contentreview.go_edit)
         contentreview.ids.conRevBackButton.bind(on_release=contentreview.go_back_manual)
         contentreview.ids.addTermButton.bind(on_release=contentreview.go_back_manual)
         contentreview.ids.completeReviewerButton.bind(on_release=contentreview.complete_reviewer)
@@ -1109,8 +1122,6 @@ class Bingo(App):
         manual.ids.manualBackButton.bind(on_release=manual.go_back_home)
         manual.ids.addTermButton.bind(on_release=manual.add_term)
         manual.ids.continueButton.bind(on_release=manual.go_to_content_review)
-
-        reviewsets.ids.reviewSetsBackButton.bind(on_release=reviewsets.go_back_home)
 
         for screen in (home, scan, imagepreview, processing, extractedcontent, extractedtext, manual, contentreview, reviewsets, bingogame, result, bingosetup, gameresult):
             sm.add_widget(screen)
@@ -1157,6 +1168,10 @@ class Bingo(App):
             sm.get_screen("contentreview").go_back_manual(None)
             return True
         
+
+        if cur == "extractedcontent":
+            sm.get_screen("extractedcontent").go_back()
+            return True
 
         if cur == "scan":
             sm.get_screen("scan").go_back_home()

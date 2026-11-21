@@ -425,35 +425,6 @@
                 height: self.width * (159/225)
                 pos_hint: {"center_x": 0.5, "center_y": 0.07}
 
-<PROCESSING>:
-    BoxLayout:
-        orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.047, 0, 0.129, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-
-        FloatLayout:
-            Label:
-                text: "Reading your notes..."
-                font_name: "./assets/fonts/PixelifySans.ttf"
-                font_size: "18sp"
-                color: 1, 1, 1, 1
-                size_hint: None, None
-                size: self.texture_size
-                pos_hint: {"center_x": 0.5, "center_y": 0.55}
-
-            Label:
-                text: "This may take a moment"
-                font_name: "./assets/fonts/PixelifySans.ttf"
-                font_size: "12sp"
-                color: 1, 1, 1, 0.6
-                size_hint: None, None
-                size: self.texture_size
-                pos_hint: {"center_x": 0.5, "center_y": 0.45}
-
 <EXTRACTEDCONTENT>:
     BoxLayout:
         orientation: "vertical"
@@ -731,23 +702,18 @@
                 Button:
                     id: addTermButton
                     size_hint: 0.5, None
-                    height: self.width * ( 71 / 262 )
+                    height: self.width * ( 71 / 282 )
                     background_normal: "./assets/pageAssets/manual/addTermButton.png"
                     background_down: "./assets/pageAssets/manual/addTermButton.png"
-                    pos_hint: {"center_x": 0.32, "center_y": 0.5}
+                    pos_hint: {"center_x": 0.34, "center_y": 0.5}
 
                 Button:
                     id: scanMoreButton
-                    text: "SCAN"
-                    font_name: "./assets/fonts/PressStart2P.ttf"
-                    font_size: "11sp"
-                    color: 0.047, 0, 0.129, 1
                     size_hint: 0.3, None
-                    height: addTermButton.height
-                    pos_hint: {"center_x": 0.76, "center_y": 0.5}
-                    background_normal: ""
-                    background_down: ""
-                    background_color: 0.25, 0.78, 0.55, 1
+                    height: self.width * ( 192 / 452 )
+                    background_normal: "./assets/pageAssets/manual/scanMoreButton.png"
+                    background_down: "./assets/pageAssets/manual/scanMoreButton.png"
+                    pos_hint: {"center_x": 0.75, "center_y": 0.5}
                     on_release: root.scan_more()
 
                 Image:
@@ -939,64 +905,3 @@
                 background_down: "./assets/pageAssets/contentreview/completeReviewerButton.png"
 
                 pos_hint: {"center_x": 0.5, "center_y":0.12}
-
-<REVIEWSETS>:
-    BoxLayout:
-        orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.047, 0, 0.129, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-
-        Widget:
-            size_hint_y: None
-            height: "50dp"
-
-        FloatLayout:
-            size_hint_y: None
-            height: "40dp"
-
-            Button:
-                id: reviewSetsBackButton
-                size_hint: None, None
-                size: dp(60), dp(60)
-                background_color: 0, 0, 0, 0
-                pos_hint: {"x": 0.05, "center_y": 0.5}
-
-                Image:
-                    source: "./assets/icons/backButton.png"
-                    size: self.parent.size
-                    pos: self.parent.pos
-
-        FloatLayout:
-
-            Image:
-                source: "./assets/pageAssets/contentreview/setContainer.png"
-                size_hint: 0.9, None
-                height: self.width * (589/373)
-                allow_stretch: True
-                pos_hint: {"center_x": 0.5, "center_y": 0.58}
-
-            ScrollView:
-                size_hint: 0.82, 0.85
-                pos_hint: {"center_x": 0.5, "center_y": 0.52}
-                bar_width: dp(0)
-
-                GridLayout:
-                    id: reviewSetsContainer
-                    cols: 1
-                    spacing: dp(8)
-                    padding: dp(5)
-                    size_hint_y: None
-                    height: self.minimum_height
-
-            Label:
-                text: "REVIEW SETS"
-                font_size: "22sp"
-                color: 1, 1, 1, 1
-                font_name: "./assets/fonts/PressStart2P.ttf"
-                size_hint: None, None
-                size: self.texture_size
-                pos_hint: {"center_x": 0.5, "center_y": 1}

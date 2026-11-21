@@ -1,0 +1,36 @@
+--------- beginning of main
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'IHDR' 16 13
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'pHYs' 41 9
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'sRGB' 62 1
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'gAMA' 75 4
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'tEXt' 91 14
+11-21 23:25:00.451 31223 31256 I python  : [DEBUG  ] STREAM b'IDAT' 117 1687
+11-21 23:25:01.848 31223 31223 I python  :  Traceback (most recent call last):
+11-21 23:25:01.849 31223 31223 I python  :    File "/data/data/org.group4.bingo/files/app/reconstruction/ocr_engine.py", line 175, in done_ok
+11-21 23:25:01.849 31223 31223 I python  :      callback(words, got_conf, None)
+11-21 23:25:01.849 31223 31223 I python  :    File "main.py", line 225, in _on_ocr
+11-21 23:25:01.849 31223 31223 I python  :      threading.Thread(target=self._detect, args=(words, has_conf), daemon=True).start()
+11-21 23:25:01.850 31223 31223 I python  :                              ^^^^^^^^^^^^
+11-21 23:25:01.850 31223 31223 I python  :  AttributeError: 'Processing' object has no attribute '_detect'
+11-21 23:25:01.850 31223 31223 I python  : OCR failed: 'Processing' object has no attribute '_detect'
+11-21 23:25:01.851 31223 31223 I python  :  Traceback (most recent call last):
+11-21 23:25:01.852 31223 31223 I python  :    File "/data/data/org.group4.bingo/files/app/reconstruction/ocr_engine.py", line 175, in done_ok
+11-21 23:25:01.852 31223 31223 I python  :      callback(words, got_conf, None)
+11-21 23:25:01.852 31223 31223 I python  :    File "main.py", line 225, in _on_ocr
+11-21 23:25:01.852 31223 31223 I python  :      threading.Thread(target=self._detect, args=(words, has_conf), daemon=True).start()
+11-21 23:25:01.852 31223 31223 I python  :                              ^^^^^^^^^^^^
+11-21 23:25:01.852 31223 31223 I python  :  AttributeError: 'Processing' object has no attribute '_detect'
+11-21 23:25:01.853 31223 31223 I python  :  
+11-21 23:25:01.853 31223 31223 I python  :  During handling of the above exception, another exception occurred:
+11-21 23:25:01.853 31223 31223 I python  :  
+11-21 23:25:01.853 31223 31223 I python  :  Traceback (most recent call last):
+11-21 23:25:01.853 31223 31223 I python  :    File "jnius/jnius_proxy.pxi", line 50, in jnius.PythonJavaClass.invoke
+11-21 23:25:01.853 31223 31223 I python  :    File "jnius/jnius_proxy.pxi", line 76, in jnius.PythonJavaClass._invoke
+11-21 23:25:01.854 31223 31223 I python  :    File "/data/data/org.group4.bingo/files/app/reconstruction/ocr_engine.py", line 123, in onSuccess
+11-21 23:25:01.854 31223 31223 I python  :      self.fn(result)
+11-21 23:25:01.854 31223 31223 I python  :    File "/data/data/org.group4.bingo/files/app/reconstruction/ocr_engine.py", line 179, in done_ok
+11-21 23:25:01.854 31223 31223 I python  :      callback(None, False, str(e))
+11-21 23:25:01.854 31223 31223 I python  :    File "main.py", line 222, in _on_ocr
+11-21 23:25:01.854 31223 31223 I python  :      self._failed("Could not read any text from this photo.")
+11-21 23:25:01.854 31223 31223 I python  :      ^^^^^^^^^^^^
+11-21 23:25:01.854 31223 31223 I python  :  AttributeError: 'Processing' object has no attribute '_failed'

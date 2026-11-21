@@ -7,6 +7,7 @@ to a callback. Callbacks run on Android's thread, so wrap them with
 @mainthread on the Kivy side (Scan._on_image already is).
 """
 import os
+import threading
 import time
 import traceback
 
@@ -29,6 +30,7 @@ REQ_SHOT = 7102
 RESULT_OK = -1
 
 MAX_SIDE = 2400
+MAX_PHOTOS = 100          # most photos taken from one upload
 
 _callbacks = {}
 _shot_uri = None
@@ -43,9 +45,9 @@ def _cache_dir():
     return str(_activity().getCacheDir().getAbsolutePath())
 
 
-def _copy_uri(uri):
+def _copy_uri(uri, tag=0):
     """Copy a content:// URI to a file in the cache directory."""
-    dest = os.path.join(_cache_dir(), "incoming_%d.bin" % int(time.time() * 1000))
+    dest = os.path.join(_cache_dir(), "incoming_%d_%d.bin" % (int(time.time() * 1000), tag))
     resolver = _activity().getContentResolver()
     ins = resolver.openInputStream(uri)
     outs = FileOutputStream(dest)
@@ -57,12 +59,8 @@ def _copy_uri(uri):
     return dest
 
 
-def prepare_image(path):
-    """Apply EXIF rotation, convert to RGB, shrink, save as a fresh JPEG."""
-    img = Image.open(path)
-    img = ImageOps.exif_transpose(img).convert("RGB")
-    img.thumbnail((MAX_SIDE, MAX_SIDE))
-
+def _clean_cache():
+    """Remove the photos of the previous scan. Call once before a new batch."""
     folder = _cache_dir()
     for name in os.listdir(folder):
         if name.startswith("page_") or name.startswith("incoming_"):
@@ -71,9 +69,22 @@ def prepare_image(path):
             except OSError:
                 pass
 
-    out = os.path.join(folder, "page_%d.jpg" % int(time.time() * 1000))
+
+def prepare_image(path, tag=0):
+    """Apply EXIF rotation, convert to RGB, shrink, save as a fresh JPEG.
+    The copied source file is deleted afterwards."""
+    img = Image.open(path)
+    img = ImageOps.exif_transpose(img).convert("RGB")
+    img.thumbnail((MAX_SIDE, MAX_SIDE))
+
+    out = os.path.join(_cache_dir(), "page_%d_%d.jpg" % (int(time.time() * 1000), tag))
     img.save(out, "JPEG", quality=92)
+    try:
+        os.remove(path)
+    except OSError:
+        pass
     return out
+
 
 def _display_name(uri):
     cursor = None
@@ -90,26 +101,53 @@ def _display_name(uri):
             cursor.close()
     return ""
 
+def _prepare_batch(raws, cb):
+    """Worker thread: resize and rotate every picked photo, then call cb([(path, name), ...])."""
+    items = []
+    for n, (raw, name) in enumerate(raws):
+        try:
+            path = prepare_image(raw, tag=n)
+            items.append((path, name or os.path.basename(path)))
+        except Exception:
+            traceback.print_exc()
+    cb(items)
+
+
 def _on_result(request_code, result_code, intent):
     global last_name, _shot_uri
     cb = _callbacks.pop(request_code, None)
     if cb is None:
         return
 
+    if request_code == REQ_PICK:
+        raws = []
+        try:
+            if result_code == RESULT_OK and intent is not None:
+                uris = []
+                clip = intent.getClipData()
+                if clip is not None:                      # several photos
+                    for i in range(min(clip.getItemCount(), MAX_PHOTOS)):
+                        uris.append(clip.getItemAt(i).getUri())
+                elif intent.getData() is not None:        # one photo
+                    uris.append(intent.getData())
+                if uris:
+                    _clean_cache()
+                for n, uri in enumerate(uris):
+                    raws.append((_copy_uri(uri, n), _display_name(uri)))
+        except Exception:
+            traceback.print_exc()
+        # resizing is slow, so it runs off the UI thread
+        threading.Thread(target=_prepare_batch, args=(raws, cb), daemon=True).start()
+        return
+
     path = None
     try:
-        if request_code == REQ_PICK:
-            if result_code == RESULT_OK and intent is not None:
-                uri = intent.getData()
-                if uri is not None:
-                    last_name = _display_name(uri)
-                    path = prepare_image(_copy_uri(uri))
-
-        elif request_code == REQ_SHOT:
+        if request_code == REQ_SHOT:
             uri, _shot_uri = _shot_uri, None
             if uri is not None:
                 if result_code == RESULT_OK:
                     last_name = _shot_name
+                    _clean_cache()
                     path = prepare_image(_copy_uri(uri))
                 else:
                     # camera cancelled: remove the empty MediaStore row
@@ -124,11 +162,14 @@ def _on_result(request_code, result_code, intent):
 activity.bind(on_activity_result=_on_result)
 
 
-def pick_image(callback):
+def pick_images(callback):
+    """Pick one or several photos. callback([(path, display name), ...]) is called with an
+    empty list when the picker is cancelled."""
     _callbacks[REQ_PICK] = callback
     intent = Intent(Intent.ACTION_GET_CONTENT)
     intent.setType("image/*")
     intent.addCategory(Intent.CATEGORY_OPENABLE)
+    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, True)
     _activity().startActivityForResult(intent, REQ_PICK)
 
 
