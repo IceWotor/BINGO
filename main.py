@@ -13,7 +13,7 @@ from kivy.app import App
 from kivy.clock import Clock, mainthread
 from kivy.core.window import Window
 from kivy.metrics import dp
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, BooleanProperty
 
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -34,10 +34,19 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
+
+from reconstruction.pair_state import Pair
+from reconstruction.pair_ui import PairCard
+
 from reconstruction.damage import WEIGHTS, GAP_K, GAP_MID
 from reconstruction.reconstruct import detect, reconstruct_words
 from reconstruction.report import build_report_blocks, build_how_blocks, esc
+from reconstruction.pairs import split_entries
+from extracted_text import ExtractedText
 
+from setup_screen import BingoSetup
+from game_result import GameResult
+from bingo_game import BingoGame
 
 class Database:
 
@@ -161,13 +170,15 @@ class Scan(Screen):
             return                      # cancelled or failed
         preview = self.manager.get_screen("imagepreview")
         preview.image_path = path
+        preview.image_name = phone_io.last_name or os.path.basename(path)
         self.manager.transition.direction = "left"
         self.manager.current = "imagepreview"
         
 class ImagePreview(Screen):
 
     image_path = ""
-
+    image_name = ""
+    
     def take_photo_again(self):
         self.manager.transition.direction = "right"
         self.manager.current = "scan"
@@ -177,169 +188,117 @@ class ImagePreview(Screen):
         self.ids.preview_image.reload()
 
     def use_photo(self):
-        self.manager.get_screen("processing").mode = "ocr"
         self.manager.transition.direction = "left"
         self.manager.current = "processing"
 
 class Processing(Screen):
-    mode = "ocr"        # "ocr", "reconstruct" or "recheck"
-    detection = None    # input for "reconstruct"
-    result = None       # input for "recheck"
+    """Loading screen: OCR, damage detection and pairing, then the Extracted Text page."""
 
     def on_enter(self):
-        if self.mode == "reconstruct":
-            threading.Thread(target=self._reconstruct,
-                             args=(self.detection,), daemon=True).start()
-            return
-        if self.mode == "recheck":
-            threading.Thread(target=self._recheck,
-                             args=(self.result,), daemon=True).start()
-            return
-        image_path = self.manager.get_screen("imagepreview").image_path
+        path = self.manager.get_screen("imagepreview").image_path
         try:
-            ocr_engine.run_ocr_async(image_path, self._on_ocr)
+            ocr_engine.run_ocr_async(path, self._on_ocr)
         except Exception:
             import traceback
             traceback.print_exc()
-            self._to_detection(None)
+            self._failed("Could not read the photo.")
 
-    # ---- OCR, then damage detection ----
     def _on_ocr(self, words, has_conf, error):
         if error or words is None:
             print("OCR failed:", error)
-            self._to_detection(None)
+            self._failed("Could not read any text from this photo.")
             return
-        threading.Thread(target=self._detect,
-                         args=(words, has_conf), daemon=True).start()
+        threading.Thread(target=self._detect, args=(words, has_conf), daemon=True).start()
 
     def _detect(self, words, has_conf):
-        det = None
         try:
             det = detect(words, has_conf)
+            entries = split_entries(det) if det.words else []
         except Exception:
             import traceback
             traceback.print_exc()
-        self._to_detection(det, "scan")
-
-    # ---- damage check again, on the reconstructed text ----
-    def _recheck(self, result):
-        det = None
-        try:
-            det = detect(words_after_reconstruction(result), True)
-        except Exception:
-            import traceback
-            traceback.print_exc()
-        self._to_detection(det, "reconstructed")
+            self._failed("Something went wrong while reading the text.")
+            return
+        if not det.words:
+            self._failed("No text was found in this photo.")
+            return
+        self._show(entries, det)
 
     @mainthread
-    def _to_detection(self, det, back="scan"):
-        self.manager.get_screen("detection").show(det, back)
-        self.manager.transition.direction = "left"
-        self.manager.current = "detection"
-
-    # ---- reconstruction ----
-    def _reconstruct(self, det):
-        result = None
-        try:
-            result = reconstruct_words(det.words, det.has_conf, det)
-        except Exception:
-            import traceback
-            traceback.print_exc()
-        self._to_reconstructed(result, det)
+    def _failed(self, message):
+        self.manager.transition.direction = "right"
+        self.manager.current = "scan"
+        _notice(message)
 
     @mainthread
-    def _to_reconstructed(self, result, det):
-        back = self.manager.get_screen("detection").back_to
-        self.manager.get_screen("reconstructed").show(result, det, back)
+    def _show(self, entries, det):
+        preview = self.manager.get_screen("imagepreview")
+        name = preview.image_name or os.path.basename(preview.image_path)
+        self.manager.get_screen("extractedtext").load(entries, det, name)
         self.manager.transition.direction = "left"
-        self.manager.current = "reconstructed"
+        self.manager.current = "extractedtext"
         
+LEGEND = ("[color=ffd23f]yellow[/color] / [color=ff5555]red[/color] = looks damaged (% sure)   "
+          "[color=3fc78c]green[/color] = filled in (% confidence)\n"
+          "Tap a definition to edit it. Wrap words in <<double angle brackets>> to mark them "
+          "for reconstruction.")
+
+
 class ExtractedContent(Screen):
     ocr_text = StringProperty("")
-    parsed_terms = []
-    result = None
+    source_name = StringProperty("")
+    has_incomplete = BooleanProperty(False)
+    cards = None
 
     def back_to_scan(self):
         self.manager.transition.direction = "right"
-        self.manager.current = "scan"
+        self.manager.current = "extractedtext"
 
-    def open_report(self):
-        if self.result is None:
-            return
-        report = self.manager.get_screen("report")
-        report.load(self.result)
-        self.manager.transition.direction = "left"
-        self.manager.current = "report"
-
-    def load_entries(self, terms):
+    def load_pairs(self, entries, filename=""):
         os.chdir(BASE_DIR)
-
-        self.parsed_terms = terms
-        self.ids.textEntriesContainer.clear_widgets()
-
-        if not terms:
+        self.source_name = filename
+        box = self.ids.textEntriesContainer
+        box.clear_widgets()
+        self.cards = []
+        entries = [e for e in entries if e.term or e.def_words]
+        if not entries:
             self.ocr_text = "No terms could be extracted."
+            self.has_incomplete = False
             return
-
         self.ocr_text = ""
+        for e in entries:
+            card = PairCard(Pair(e.term, list(e.def_words), e.det), self.remove_card)
+            card.on_change = self.update_state
+            self.cards.append(card)
+            box.add_widget(card)
+        self.update_state()
 
-        for number, item in enumerate(terms, start=1):
-            entry = TextPreviewEntry(
-                number=number,
-                term=item.get("term", ""),
-                definition=item.get("definition", ""),
-                confidence=item.get("confidence", 0)
-            )
-            self.ids.textEntriesContainer.add_widget(entry)
+    def update_state(self, *_):
+        self.has_incomplete = any(c.incomplete for c in self.cards or [])
+
+    def remove_card(self, card):
+        if card in self.cards:
+            self.cards.remove(card)
+        self.ids.textEntriesContainer.remove_widget(card)
+        if not self.cards:
+            self.ocr_text = "No pairs left."
+        self.update_state()
 
     def continue_to_manual(self):
-        if not self.parsed_terms:
-            print("No terms to add.")
+        if self.has_incomplete:
             return
-
-        app = App.get_running_app()
-        review_set_id = app.db.create_review_set("Untitled Review Set")
-
-        manual = self.manager.get_screen("manual")
-        manual.review_set_id = review_set_id
-        manual.is_existing_set = False
-        manual.ids.entriesContainer.clear_widgets()
-
-        for item in self.parsed_terms:
-            term = item.get("term", "").strip()
-            definition = item.get("definition", "").strip()
-            if not term or not definition:
-                continue
-
-            term_id = app.db.add_term(review_set_id, term, definition)
-            entry = TermEntry(term_id=term_id, term=term, definition=definition)
-            manual.ids.entriesContainer.add_widget(entry)
-
-        manual.ids.entryCountLabel.text = str(app.db.get_term_count(review_set_id))
-
-        self.manager.transition.direction = "left"
-        self.manager.current = "manual"
-
-
-class Report(Screen):
-
-    def go_back(self):
-        self.manager.transition.direction = "right"
-        self.manager.current = "extractedcontent"
-
-    def load(self, result):
-        box = self.ids.reportContainer
-        box.clear_widgets()
-        for block in build_report_blocks(result):
-            lbl = Label(text=block, markup=True,
-                        font_name="./assets/fonts/PixelifySans.ttf",
-                        font_size="11sp", color=(1, 1, 1, 1),
-                        size_hint_y=None, halign="left", valign="top")
-            lbl.bind(width=lambda i, v: setattr(i, "text_size", (v, None)))
-            lbl.bind(texture_size=lambda i, v: setattr(i, "height", v[1] + dp(8)))
-            box.add_widget(lbl)
-
-
+        terms = []
+        for card in self.cards or []:
+            card.commit_all()
+            term = card.pair.term.strip()
+            definition = card.pair.definition_text().strip()
+            if term and definition:
+                terms.append({"term": term, "definition": definition})
+        if not terms:
+            _notice("Nothing to add yet. Each pair needs a term and a definition.")
+            return
+        send_to_manual(self.manager, terms)
+        
 class Manual(Screen):
 
     review_set_id = None
@@ -614,10 +573,10 @@ class ContentReview(Screen):
         reviewsets.load_review_sets()
 
         # Start Bingo using the review set that was just completed.
-        game = self.manager.get_screen("bingogame")
-        game.start_game(self.review_set_id, name)
+        setup = self.manager.get_screen("bingosetup")
+        setup.open_for(self.review_set_id)
         self.manager.transition.direction = "left"
-        self.manager.current = "bingogame"
+        self.manager.current = "bingosetup"
 
 
 class ContentReviewEntry(FloatLayout):
@@ -931,166 +890,6 @@ class ReviewSetEntry(FloatLayout):
         reviewsets.load_review_sets()
 
 
-class BingoGame(Screen):
-    """Term-matching Bingo game based on the completed review set."""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.review_set_id = None
-        self.terms = []
-        self.question_order = []
-        self.question_index = 0
-        self.score = 0
-        self.streak = 0
-        self._answered = False
-
-        with self.canvas.before:
-            Color(0.047, 0, 0.129, 1)
-            self._game_bg = Rectangle(pos=self.pos, size=self.size)
-        self.bind(pos=self._update_bg, size=self._update_bg)
-
-        root = BoxLayout(orientation="vertical", padding=(dp(16), dp(18)), spacing=dp(8))
-        top = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
-        back = Button(text="‹", font_name=FONT_PX, font_size="18sp", color=(1, 0.2, 0.8, 1),
-                      size_hint_x=None, width=dp(42), background_normal="", background_color=(0,0,0,0))
-        back.bind(on_release=self.go_back)
-        top.add_widget(back)
-        top.add_widget(Label(text="BINGO!", font_name=FONT_PX, font_size="16sp", color=AMBER))
-        top.add_widget(Widget(size_hint_x=None, width=dp(42)))
-        root.add_widget(top)
-
-        self.stats_label = Label(text="⭐ Score: 0 / 0       Question 1 / 1", font_name=FONT,
-                                 font_size="12sp", size_hint_y=None, height=dp(30))
-        root.add_widget(self.stats_label)
-        self.definition_label = Label(text="Complete a reviewer to start playing.", font_name=FONT,
-                                      font_size="14sp", halign="center", valign="middle",
-                                      size_hint_y=None, height=dp(110), color=(1,1,1,1))
-        self.definition_label.bind(size=lambda w, size: setattr(w, "text_size", (size[0]-dp(16), size[1])))
-        with self.definition_label.canvas.before:
-            Color(0.10, 0.06, 0.25, 1)
-            self._definition_bg = RoundedRectangle(pos=self.definition_label.pos,
-                                                    size=self.definition_label.size, radius=[dp(12)])
-        self.definition_label.bind(pos=self._update_definition_bg, size=self._update_definition_bg)
-        root.add_widget(self.definition_label)
-
-        self.grid = GridLayout(cols=3, spacing=dp(7), padding=dp(4), size_hint_y=0.68)
-        root.add_widget(self.grid)
-        self.feedback_label = Label(text="", font_name=FONT, font_size="13sp", size_hint_y=None, height=dp(42))
-        root.add_widget(self.feedback_label)
-        self.streak_label = Label(text="Streak: 0", font_name=FONT_PX, font_size="10sp",
-                                  color=(0.7, 0.4, 1, 1), size_hint_y=None, height=dp(30))
-        root.add_widget(self.streak_label)
-        self.add_widget(root)
-
-    def _update_bg(self, *args):
-        self._game_bg.pos, self._game_bg.size = self.pos, self.size
-
-    def _update_definition_bg(self, *args):
-        self._definition_bg.pos = self.definition_label.pos
-        self._definition_bg.size = self.definition_label.size
-
-    def go_back(self, *args):
-        self.manager.transition.direction = "right"
-        self.manager.current = "reviewsets"
-
-    def start_game(self, review_set_id, name=""):
-        app = App.get_running_app()
-        self.review_set_id = review_set_id
-        self.terms = [(term, definition) for _, term, definition in app.db.get_terms(review_set_id)
-                      if term.strip() and definition.strip()]
-        self.question_order = list(range(len(self.terms)))
-        random.shuffle(self.question_order)
-        self.question_index = 0
-        self.score = 0
-        self.streak = 0
-        self._answered = False
-        self.feedback_label.text = ""
-        if not self.terms:
-            self.definition_label.text = "This reviewer has no terms yet. Go back and add some first."
-            self.grid.clear_widgets()
-            self.stats_label.text = "Score: 0 / 0"
-            self.streak_label.text = "Streak: 0"
-            return
-        self._show_question()
-
-    def _show_question(self):
-        if self.question_index >= len(self.question_order):
-            self.definition_label.text = "REVIEW COMPLETE!\nFinal score: %d / %d" % (self.score, len(self.terms))
-            self.grid.clear_widgets()
-            again = Button(text="PLAY AGAIN", font_name=FONT_PX, font_size="11sp", color=AMBER,
-                           background_normal="", background_color=(0.22, 0.08, 0.55, 1))
-            again.bind(on_release=lambda *_: self.start_game(self.review_set_id))
-            back = Button(text="BACK TO REVIEW SETS", font_name=FONT, font_size="12sp", color=(1,1,1,1),
-                          background_normal="", background_color=(0.22, 0.08, 0.55, 1))
-            back.bind(on_release=self.go_back)
-            self.grid.add_widget(again)
-            self.grid.add_widget(back)
-            self.feedback_label.text = ""
-            self.stats_label.text = "Score: %d / %d" % (self.score, len(self.terms))
-            self.streak_label.text = "Best play is continuous correct answers!"
-            return
-
-        self._answered = False
-        correct_index = self.question_order[self.question_index]
-        correct_term, definition = self.terms[correct_index]
-        self.definition_label.text = definition
-        self.stats_label.text = "⭐ Score: %d / %d       Question %d / %d" % (
-            self.score, len(self.terms), self.question_index + 1, len(self.terms))
-        self.streak_label.text = "Streak: %d" % self.streak
-        self.feedback_label.text = "Tap the term that matches the definition."
-
-        distractors = [item for i, item in enumerate(self.terms) if i != correct_index]
-        random.shuffle(distractors)
-        options = [(correct_term, True)] + [(term, False) for term, _ in distractors[:7]]
-        while len(options) < 8:
-            options.append(("—", False))
-        random.shuffle(options)
-        self.grid.clear_widgets()
-        for index, (term, is_correct) in enumerate(options):
-            if index == 4:
-                free = Label(text="⭐\nFREE!", font_name=FONT_PX, font_size="10sp", color=AMBER)
-                self.grid.add_widget(free)
-            if term == "—":
-                btn = Button(text=term, disabled=True)
-            else:
-                btn = Button(text=term, font_name=FONT, font_size="11sp", color=(0.78,0.65,1,1),
-                             background_normal="", background_down="",
-                             background_color=(0.10,0.04,0.30,1),
-                             border=(dp(2), dp(2), dp(2), dp(2)))
-                btn.bind(on_release=lambda instance, ok=is_correct, answer=correct_term: self.check_answer(instance, ok, answer))
-            self.grid.add_widget(btn)
-
-    def check_answer(self, button, is_correct, correct_term):
-        if self._answered:
-            return
-        self._answered = True
-        for child in self.grid.children:
-            if isinstance(child, Button):
-                child.disabled = True
-        if is_correct:
-            self.score += 1
-            self.streak += 1
-            button.background_color = (0.05, 0.45, 0.30, 1)
-            self.feedback_label.text = "✓ Correct!  " + correct_term
-            self.feedback_label.color = (0.25, 1, 0.65, 1)
-        else:
-            self.streak = 0
-            button.background_color = (0.55, 0.08, 0.18, 1)
-            self.feedback_label.text = "Incorrect! Answer: " + correct_term
-            self.feedback_label.color = (1, 0.3, 0.4, 1)
-            for child in self.grid.children:
-                if isinstance(child, Button) and child.text == correct_term:
-                    child.background_color = (0.05, 0.45, 0.30, 1)
-        self.streak_label.text = "Streak: %d" % self.streak
-        self.stats_label.text = "⭐ Score: %d / %d       Question %d / %d" % (
-            self.score, len(self.terms), self.question_index + 1, len(self.terms))
-        Clock.schedule_once(self._next_question, 1.0)
-
-    def _next_question(self, dt):
-        self.question_index += 1
-        self._show_question()
-
-
 class Result(Screen):
     pass
 
@@ -1277,325 +1076,8 @@ class Card(BoxLayout):
                 self._open = not self._open
                 return True
         return super().on_touch_up(touch)
-class Detection(PageScreen):
-    """OCR text with the parts the model thinks are damaged highlighted."""
-    det = None
-    back_to = "scan"
-    editing = False
-    editor = None
+    
 
-    def __init__(self, **kwargs):
-        super().__init__(
-            title="DAMAGE CHECK", right_text="EDIT",
-            bottoms=(("RECONSTRUCT", "on_reconstruct", AMBER),
-                     ("SPLIT TERMS", "on_split", TEAL)),
-            **kwargs)
-
-    def _has_text(self):
-        return self.det is not None and bool(self.det.words)
-
-    # ---------- navigation ----------
-    def on_back_pressed(self):
-        if self.editing:
-            self.show(self.det)          # leave the editor without saving
-            return
-        self.manager.transition.direction = "right"
-        self.manager.current = self.back_to
-
-    # ---------- manual editing ----------
-    def on_right_pressed(self):
-        if self.editing:
-            self._save_edit()
-        else:
-            self._start_edit()
-
-    def _start_edit(self):
-        self.editing = True
-        self.right_btn.text = "SAVE"
-        self.box.clear_widgets()
-        self.box.add_widget(_label(
-            "Fix the text yourself, then tap SAVE to run the damage check again. "
-            "Words you type are trusted, so they are not flagged.\n"
-            f"[size=10sp][color={DIM_HEX}]For SPLIT TERMS, put each item on its own line "
-            f"as 'Term - definition'.[/color][/size]", size="11sp"))
-        words = self.det.words if self.det else []
-        self.editor = TextInput(
-            text=words_to_text(words), font_name=FONT, font_size="14sp",
-            foreground_color=(1, 1, 1, 1), cursor_color=AMBER,
-            background_normal="", background_active="",
-            background_color=(1, 1, 1, 0.08),
-            padding=(dp(8), dp(8)), size_hint_y=None, height=dp(300))
-        self.editor.bind(minimum_height=lambda i, v: setattr(i, "height", max(v, dp(300))))
-        self.box.add_widget(self.editor)
-
-    def _save_edit(self):
-        text = self.editor.text if self.editor else ""
-        old = self.det.words if self.det else []
-        has_conf = self.det.has_conf if self.det else True
-        try:
-            det = detect(text_to_words(old, text), has_conf)
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            _notice("Could not check the edited text.")
-            return
-        self.show(det)
-
-    # ---------- bottom buttons ----------
-    def on_reconstruct(self):
-        if self.editing:
-            self._save_edit()
-        if not self._has_text():
-            return
-        processing = self.manager.get_screen("processing")
-        processing.mode = "reconstruct"
-        processing.detection = self.det
-        self.manager.transition.direction = "left"
-        self.manager.current = "processing"
-
-    def on_split(self):
-        if self.editing:
-            self._save_edit()
-        if not self._has_text():
-            return
-        confs = [w.conf for w in self.det.words if w.conf >= 0]
-        mean = sum(confs) / len(confs) if confs else 0.0
-        terms = extract_terms(words_to_text(self.det.words), {}, mean)
-        if not terms:
-            _notice("No terms found. Put each item on its own line as "
-                    "'Term - definition'. Use EDIT to fix the text.")
-            return
-        send_to_manual(self.manager, terms)
-
-    # ---------- display ----------
-    @staticmethod
-    def _marked_text(det):
-        words, toks = det.words, det.tokens
-        role = {}
-        for g in det.gaps:
-            for k in range(g.position - 2, g.position + 2):
-                role.setdefault(k, "ctx")
-        for i, t in enumerate(toks):
-            if t.flagged:
-                for k in range(i - 2, i + 3):
-                    role.setdefault(k, "ctx")
-        for i, t in enumerate(toks):
-            if t.flagged:
-                role[i] = "bad"
-
-        gap_at = {g.position: g for g in det.gaps}
-        lines = {}
-        for i, w in enumerate(words):
-            lines.setdefault(w.line, []).append(i)
-
-        out = []
-        for _, idxs in sorted(lines.items()):
-            parts, run, best = [], [], [0.0]
-
-            def flush():
-                if run:
-                    parts.append(
-                        " ".join(run) +
-                        f"[size=9sp][color={_sev(best[0])}] @{round(best[0] * 100)}%"
-                        f"[/color][/size]")
-                    run.clear()
-                    best[0] = 0.0
-
-            for i in idxs:
-                r = role.get(i)
-                if i in gap_at:
-                    g = gap_at[i]
-                    run.append(f"[color={RED_HEX}][b]&bl;missing {g.est_words}&br;[/b][/color]")
-                    best[0] = max(best[0], g.p_gap)
-                    r = r or "ctx"
-                txt = esc(words[i].text)
-                if r == "bad":
-                    run.append(f"[color={RED_HEX}][b][u]{txt}[/u][/b][/color]")
-                    best[0] = max(best[0], toks[i].p_damage)
-                elif r == "ctx":
-                    run.append(f"[color={AMBER_HEX}]{txt}[/color]")
-                else:
-                    flush()
-                    parts.append(txt)
-            flush()
-            out.append(" ".join(parts))
-        return "\n".join(out)
-
-    @staticmethod
-    def _token_detail(i, t):
-        W = WEIGHTS
-        conf = t.word.conf
-        if t.bits is not None:
-            lm = (f"surprisal = {t.bits:.1f} bits, z-score {t.z_lm:+.2f}\n"
-                  f"   f_lm = sigmoid({t.z_lm:+.2f}) = {t.f_lm:.2f}")
-        else:
-            lm = "no surprisal available, so f_lm = 0.50 (neutral)"
-        return (f"{_src_name(t.word)} confidence {conf:.0f}%\n"
-                f"   f_ocr = 1 - {conf:.0f}/100 = {t.f_ocr:.2f}\n"
-                f"{lm}\n"
-                f"shape check: {esc(t.why)}\n"
-                f"   f_shape = {t.f_shape:.2f}\n"
-                f"z = {W['bias']} + {W['ocr']}*{t.f_ocr:.2f} + {W['lm']}*{t.f_lm:.2f} "
-                f"+ {W['shape']}*{t.f_shape:.2f} = {t.z:+.2f}\n"
-                f"P(damaged) = sigmoid({t.z:+.2f}) = [b]{t.p_damage*100:.0f}%[/b]")
-
-    @staticmethod
-    def _gap_detail(g, stats):
-        return (f"gap = {g.gap_px:.0f}px, median gap = {stats['med_gap']:.0f}px\n"
-                f"   ratio = {g.gap_px:.0f} / {stats['med_gap']:.0f} = {g.ratio:.2f}\n"
-                f"missing words = round({g.gap_px:.0f} / ({stats['med_w']:.0f} + "
-                f"{stats['med_gap']:.0f})) = {g.est_words}\n"
-                f"P(gap) = sigmoid({GAP_K} * ({g.ratio:.2f} - {GAP_MID})) = "
-                f"[b]{g.p_gap*100:.0f}%[/b]")
-
-    def show(self, det, back=None):
-        if back:
-            self.back_to = back
-        self.editing = False
-        self.editor = None
-        if self.right_btn is not None:
-            self.right_btn.text = "EDIT"
-        self.det = det
-        self.box.clear_widgets()
-
-        if det is None or not det.words:
-            self.box.add_widget(_label(
-                "Nothing to show. Tap EDIT to type the text yourself, or go back."))
-            return
-
-        toks = [(i, t) for i, t in enumerate(det.tokens) if t.flagged]
-        n_bad, n_gap = len(toks), len(det.gaps)
-        stage = ("after reconstruction" if self.back_to == "reconstructed"
-                 else "straight from OCR")
-
-        if det.has_conf:
-            mean = sum(w.conf for w in det.words) / len(det.words)
-            conf_txt = f"mean confidence {mean:.0f}%"
-        else:
-            conf_txt = "this ML Kit build gives no per-word confidence"
-        self.box.add_widget(_label(
-            f"[b][color={AMBER_HEX}]{n_bad} damaged word(s)  |  {n_gap} gap(s)[/color][/b]\n"
-            f"[size=10sp][color={DIM_HEX}]{stage}: {len(det.words)} words, "
-            f"{conf_txt}[/color][/size]"))
-
-        self.box.add_widget(_label(
-            f"[color={RED_HEX}][b][u]red[/u][/b][/color] damaged word   "
-            f"[color={AMBER_HEX}]amber[/color] words around it   "
-            f"[color={RED_HEX}][b]&bl;missing&br;[/b][/color] words lost here\n"
-            f"[size=10sp][color={DIM_HEX}]@ = highest damage score in that "
-            f"highlighted phrase[/color][/size]", size="10sp"))
-
-        self.box.add_widget(_label(self._marked_text(det), size="14sp"))
-
-        if n_bad + n_gap == 0:
-            self.box.add_widget(_label("No damaged words or gaps detected."))
-            return
-
-        self.box.add_widget(_label(
-            f"[b][color={AMBER_HEX}]HOW SURE, AND WHY[/color][/b]\n"
-            f"[size=10sp][color={DIM_HEX}]most damaged first, tap a card[/color][/size]"))
-
-        W = WEIGHTS
-        cards = []
-        for i, t in toks:
-            reasons = [
-                (W["ocr"] * t.f_ocr, f"{_src_name(t.word)} only {t.word.conf:.0f}% sure"),
-                (W["lm"] * t.f_lm, "unlikely given the words around it"),
-                (W["shape"] * t.f_shape, esc(t.why)),
-            ]
-            main = max(reasons)[1]
-            head = (f"[b]{esc(t.word.text)}[/b]  "
-                    f"[color={_sev(t.p_damage)}]{t.p_damage*100:.0f}% damaged[/color]\n"
-                    f"[size=10sp][color={DIM_HEX}]mainly: {main}[/color][/size]")
-            cards.append((t.p_damage, Card(head, t.p_damage, _sev_rgba(t.p_damage),
-                                           self._token_detail(i, t))))
-        for g in det.gaps:
-            nxt = det.words[g.position].text if g.position < len(det.words) else ""
-            head = (f"[b]~{g.est_words} word(s) missing[/b] before '{esc(nxt)}'  "
-                    f"[color={_sev(g.p_gap)}]{g.p_gap*100:.0f}%[/color]\n"
-                    f"[size=10sp][color={DIM_HEX}]gap is {g.ratio:.1f}x the usual "
-                    f"spacing[/color][/size]")
-            cards.append((g.p_gap, Card(head, g.p_gap, _sev_rgba(g.p_gap),
-                                        self._gap_detail(g, det.stats))))
-
-        for _, card in sorted(cards, key=lambda c: -c[0]):
-            self.box.add_widget(card)
-
-        self.box.add_widget(_label(
-            "These percentages come straight from the formulas. The weights are "
-            "hand-set, so treat them as scores, not calibrated probabilities.", size="9sp"))
-
-class Reconstructed(PageScreen):
-    result = None
-    source_det = None
-    source_back = "scan"
-
-    def __init__(self, **kwargs):
-        super().__init__(title="RECONSTRUCTED", right_text="HOW",
-                         bottoms=(("DAMAGE CHECK", "on_recheck", AMBER),), **kwargs)
-
-    def on_back_pressed(self):
-        # go back to the damage check that this reconstruction came from
-        self.manager.get_screen("detection").show(self.source_det, self.source_back)
-        self.manager.transition.direction = "right"
-        self.manager.current = "detection"
-
-    def on_right_pressed(self):
-        if self.result is None:
-            return
-        how = self.manager.get_screen("how")
-        how.show(self.result)
-        self.manager.transition.direction = "left"
-        self.manager.current = "how"
-
-    def on_recheck(self):
-        if self.result is None:
-            return
-        processing = self.manager.get_screen("processing")
-        processing.mode = "recheck"
-        processing.result = self.result
-        self.manager.transition.direction = "left"
-        self.manager.current = "processing"
-
-    def show(self, result, det=None, back="scan"):
-        self.result = result
-        self.source_det = det
-        self.source_back = back
-        self.box.clear_widgets()
-
-        if result is None:
-            self.box.add_widget(_label("Reconstruction failed."))
-            return
-
-        slots = {s.id: s for s in result.slots}
-
-        def fill(m):
-            s = slots.get(int(m.group(1)))
-            conf = f" {s.recon_conf * 100:.0f}%" if s else ""
-            return (f"[color=ffbf33][b]{m.group(2)}[/b][/color]"
-                    f"[size=9sp][color=ffbf33]{conf}[/color][/size]")
-
-        page = re.sub(r"\{\{(\d+)\|([^}]*)\}\}", fill, esc(result.annotated))
-
-        self.box.add_widget(_label(
-            "[color=ffbf33][b]orange[/b][/color] = filled in by the language model "
-            "(with its confidence). Tap HOW to see the calculation, or DAMAGE CHECK "
-            "to check the new text."))
-        self.box.add_widget(_label(page, size="13sp"))
-        self.box.add_widget(_label(f"{len(result.slots)} spot(s) filled.", size="10sp"))
-
-class How(PageScreen):
-    def __init__(self, **kwargs):
-        super().__init__(title="HOW IT WORKED", **kwargs)
-
-    def on_back_pressed(self):
-        self.manager.transition.direction = "right"
-        self.manager.current = "reconstructed"
-
-    def show(self, result):
-        self.box.clear_widgets()
-        for block in build_how_blocks(result):
-            self.box.add_widget(_label(block, size="11sp"))
 class Bingo(App):
 
     def build(self):
@@ -1610,15 +1092,14 @@ class Bingo(App):
         imagepreview = ImagePreview(name="imagepreview")
         processing = Processing(name="processing")
         extractedcontent = ExtractedContent(name="extractedcontent")
-        report = Report(name="report")
+        extractedtext = ExtractedText(name="extractedtext")
         manual = Manual(name="manual")
         contentreview = ContentReview(name="contentreview")
         reviewsets = ReviewSets(name="reviewsets")
         bingogame = BingoGame(name="bingogame")
         result = Result(name="result")
-        detection = Detection(name="detection")
-        reconstructed = Reconstructed(name="reconstructed")
-        how = How(name="how")
+        bingosetup = BingoSetup(name="bingosetup")
+        gameresult = GameResult(name="gameresult")
 
         contentreview.ids.edit_button.bind(on_release=contentreview.printEdit)
         contentreview.ids.conRevBackButton.bind(on_release=contentreview.go_back_manual)
@@ -1631,9 +1112,7 @@ class Bingo(App):
 
         reviewsets.ids.reviewSetsBackButton.bind(on_release=reviewsets.go_back_home)
 
-        for screen in (home, scan, imagepreview, processing, extractedcontent,
-                       report, manual, contentreview, reviewsets, bingogame, result,
-                       detection, reconstructed, how):
+        for screen in (home, scan, imagepreview, processing, extractedcontent, extractedtext, manual, contentreview, reviewsets, bingogame, result, bingosetup, gameresult):
             sm.add_widget(screen)
 
         sm.current = "home"
@@ -1643,6 +1122,12 @@ class Bingo(App):
         # Load the Java classes on the main thread so the OCR worker thread can use them.
         try:
             ocr_engine.init()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+        try:
+            from reconstruction import mlm
+            mlm.init()
         except Exception:
             import traceback
             traceback.print_exc()
@@ -1672,20 +1157,24 @@ class Bingo(App):
             sm.get_screen("contentreview").go_back_manual(None)
             return True
         
-        if cur in ("detection", "reconstructed"):
-            sm.get_screen(cur).on_back_pressed()
-            return True
 
         if cur == "scan":
             sm.get_screen("scan").go_back_home()
+            return True
+        
+        if cur == "bingosetup":
+            sm.get_screen("bingosetup").go_back()
+            return True
+        
+        if cur == "bingogame":
+            sm.get_screen("bingogame").go_back()
             return True
 
         target = {
             "scan": "home",
             "imagepreview": "scan",
-            "extractedcontent": "scan",
-            "report": "extractedcontent",
-            "how": "reconstructed",
+            "extractedtext": "scan",
+            "extractedcontent": "extractedtext",            
             "reviewsets": "home",
         }.get(cur, "home")
         sm.transition.direction = "right"

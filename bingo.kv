@@ -335,9 +335,15 @@
 
                     Image:
                         source: "./assets/pageAssets/scan/supported.png"
-                        size_hint: 0.6, None
+                        size_hint: 0.4, None
                         height: self.width * (159/225)
                         pos_hint: {"center_x": 0.53, "center_y": 0.33}
+
+                    Image:
+                        source: "./assets/pageAssets/scan/Progress bottom(scan).png"
+                        size_hint: 0.6, None
+                        height: self.width * (159/225)
+                        pos_hint: {"center_x": 0.53, "center_y": 0.23}
 
 <IMAGEPREVIEW>:
     BoxLayout:
@@ -412,6 +418,12 @@
                     source:"./assets/pageAssets/imagepreview/retakeButton.png"
                     size: self.parent.size
                     pos: self.parent.pos
+            
+            Image:
+                source:"./assets/pageAssets/imagepreview/Progress bottom (preview).png"
+                size_hint: 0.6, None
+                height: self.width * (159/225)
+                pos_hint: {"center_x": 0.5, "center_y": 0.07}
 
 <PROCESSING>:
     BoxLayout:
@@ -454,77 +466,109 @@
 
         Widget:
             size_hint_y: None
-            height: "50dp"
+            height: "40dp"
 
         FloatLayout:
 
+            # big dark panel
             Image:
                 source: "./assets/pageAssets/extractedcontent/setContainer.png"
-                size_hint: 0.9, 1
+                keep_ratio: False
                 allow_stretch: True
-                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                size_hint: 0.9, 0.86
+                pos_hint: {"center_x": .5, "y": .10}
 
-            ScrollView:
-                size_hint: 0.82, 0.75
-                pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                bar_width: dp(0)
+            # everything inside the panel is a vertical stack, so nothing can overlap
+            BoxLayout:
+                orientation: "vertical"
+                spacing: dp(10)
+                size_hint: 0.82, 0.74
+                pos_hint: {"center_x": .5, "y": .115}
 
-                GridLayout:
-                    id: textEntriesContainer
-                    cols: 1
-                    spacing: dp(8)
-                    padding: dp(5)
+                # source bar
+                FloatLayout:
                     size_hint_y: None
-                    height: self.minimum_height
+                    height: self.width * (52 / 331)
+                    Image:
+                        source: "./assets/pageAssets/extractedcontent/sourceContainer.png"
+                        keep_ratio: False
+                        allow_stretch: True
+                        size_hint: 1, 1
+                        pos_hint: {"x": 0, "y": 0}
+                    Label:
+                        text: "Source: " + root.source_name
+                        font_name: "./assets/fonts/PixelifySans.ttf"
+                        font_size: "11sp"
+                        color: 0.55, 0.45, 0.85, 1
+                        shorten: True
+                        shorten_from: "right"
+                        text_size: self.size
+                        halign: "left"
+                        valign: "middle"
+                        size_hint: 0.76, 1
+                        pos_hint: {"x": 0.19, "y": 0}
 
+                # cards
+                ScrollView:
+                    bar_width: 0
+                    GridLayout:
+                        id: textEntriesContainer
+                        cols: 1
+                        spacing: dp(16)
+                        padding: 0, dp(2)
+                        size_hint_y: None
+                        height: self.minimum_height
+
+                # banner and Continue share this slot
+                FloatLayout:
+                    size_hint_y: None
+                    height: self.width * (63 / 333)
+
+                    Image:
+                        source: "./assets/pageAssets/extractedcontent/bottomContainer.png"
+                        keep_ratio: False
+                        allow_stretch: True
+                        size_hint: 1, 1
+                        pos_hint: {"x": 0, "y": 0}
+                        opacity: 1 if root.has_incomplete else 0
+
+                    Button:
+                        size_hint: 1, 1
+                        pos_hint: {"x": 0, "y": 0}
+                        background_normal: "./assets/pageAssets/manual/continueButton.png"
+                        background_down: "./assets/pageAssets/manual/continueButton.png"
+                        border: 0, 0, 0, 0
+                        opacity: 0 if root.has_incomplete else 1
+                        disabled: root.has_incomplete
+                        on_release: root.continue_to_manual()
+
+            # "no terms" / "no pairs left" message
             Label:
                 text: root.ocr_text
                 font_name: "./assets/fonts/PixelifySans.ttf"
                 font_size: "14sp"
-                color: 1, 1, 1, 1
                 size_hint: 0.8, None
                 text_size: self.width, None
                 halign: "center"
-                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                pos_hint: {"center_x": .5, "center_y": .5}
 
+            # title bar
             Image:
                 source: "./assets/pageAssets/extractedcontent/topbar.png"
-                size_hint: 0.9, None
-                height: self.width * (589/373)
+                keep_ratio: False
                 allow_stretch: True
-                pos_hint: {"center_x": 0.5, "center_y": 0.93}
+                size_hint: 0.95, None
+                height: self.width * (92 / 376)
+                pos_hint: {"center_x": .5, "top": .975}
 
-            Button:
-                text: "HOW?"
-                font_name: "./assets/fonts/PressStart2P.ttf"
-                font_size: "9sp"
-                size_hint: None, None
-                size: "60dp", "28dp"
-                pos_hint: {"right": 0.97, "center_y": 0.93}
-                on_release: root.open_report()
-
-            Button:
-                id: reviewTermsButton
-                size_hint: 0.89, None
-                height: self.width * (70 / 344)
-                pos_hint: {"center_x": 0.5, "center_y": 0.08}
-                background_normal: "./assets/pageAssets/manual/continueButton.png"
-                background_down: "./assets/pageAssets/manual/continueButton.png"
-                on_release: root.continue_to_manual()
-            
-            
-            Button:
-                text: "<"
-                font_name: "./assets/fonts/PressStart2P.ttf"
-                font_size: "14sp"
-                color: 1, 0.749, 0.2, 1
-                size_hint: None, None
-                size: dp(44), dp(44)
-                pos_hint: {"x": 0.03, "top": 0.98}
-                background_normal: ""
-                background_down: ""
-                background_color: 0, 0, 0, 0
-                on_release: root.back_to_scan()
+            # step bar
+            Image:
+                source: "./assets/pageAssets/extractedcontent/progressBottom.png"
+                keep_ratio: False
+                allow_stretch: True
+                size_hint: 0.6, None
+                height: self.width * (61 / 241)
+                pos_hint: {"center_x": .5, "y": .015}
 
 <REPORT>:
     BoxLayout:
@@ -687,7 +731,7 @@
                 Button:
                     id: addTermButton
                     size_hint: 0.5, None
-                    height: self.width * ( 71 / 232 )
+                    height: self.width * ( 71 / 262 )
                     background_normal: "./assets/pageAssets/manual/addTermButton.png"
                     background_down: "./assets/pageAssets/manual/addTermButton.png"
                     pos_hint: {"center_x": 0.32, "center_y": 0.5}
@@ -746,7 +790,7 @@
                 Button:
                     id: continueButton
                     size_hint: 0.89, None
-                    height: self.width * ( 70 / 344 )
+                    height: self.width * ( 70 / 464 )
                     pos_hint: {"center_x": 0.5, "center_y":0.08}
                     background_normal: "./assets/pageAssets/manual/continueButton.png"
                     background_down: "./assets/pageAssets/manual/continueButton.png"
@@ -879,7 +923,7 @@
             Button:
                 id: addTermButton
                 size_hint: 0.59, None
-                height: self.width * ( 71 / 232 )
+                height: self.width * ( 71 / 300 )
 
                 background_normal: "./assets/pageAssets/contentreview/addTermButton.png"
                 background_down: "./assets/pageAssets/contentreview/addTermButton.png"
@@ -888,8 +932,8 @@
 
             Button:
                 id: completeReviewerButton
-                size_hint: 0.89, None
-                height: self.width * ( 70 / 344 )
+                size_hint: 0.8, None
+                height: self.width * ( 70 / 450 )
 
                 background_normal: "./assets/pageAssets/contentreview/completeReviewerButton.png"
                 background_down: "./assets/pageAssets/contentreview/completeReviewerButton.png"

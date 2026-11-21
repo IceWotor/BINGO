@@ -11,8 +11,9 @@ import time
 import traceback
 
 from android import activity
-from jnius import autoclass, cast
 from PIL import Image, ImageOps
+
+from jnius import autoclass, cast
 
 MediaStoreImagesMedia = autoclass("android.provider.MediaStore$Images$Media")
 PythonActivity = autoclass("org.kivy.android.PythonActivity")
@@ -21,6 +22,7 @@ MediaStore = autoclass("android.provider.MediaStore")
 ContentValues = autoclass("android.content.ContentValues")
 FileUtils = autoclass("android.os.FileUtils")
 FileOutputStream = autoclass("java.io.FileOutputStream")
+OpenableColumns = autoclass("android.provider.OpenableColumns")
 
 REQ_PICK = 7101
 REQ_SHOT = 7102
@@ -30,7 +32,8 @@ MAX_SIDE = 2400
 
 _callbacks = {}
 _shot_uri = None
-
+last_name = ""        # display name of the photo that was just picked or taken
+_shot_name = ""
 
 def _activity():
     return PythonActivity.mActivity
@@ -72,8 +75,23 @@ def prepare_image(path):
     img.save(out, "JPEG", quality=92)
     return out
 
+def _display_name(uri):
+    cursor = None
+    try:
+        cursor = _activity().getContentResolver().query(uri, None, None, None, None)
+        if cursor is not None and cursor.moveToFirst():
+            i = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if i >= 0:
+                return str(cursor.getString(i))
+    except Exception:
+        traceback.print_exc()
+    finally:
+        if cursor is not None:
+            cursor.close()
+    return ""
 
 def _on_result(request_code, result_code, intent):
+    global last_name, _shot_uri
     cb = _callbacks.pop(request_code, None)
     if cb is None:
         return
@@ -84,13 +102,14 @@ def _on_result(request_code, result_code, intent):
             if result_code == RESULT_OK and intent is not None:
                 uri = intent.getData()
                 if uri is not None:
+                    last_name = _display_name(uri)
                     path = prepare_image(_copy_uri(uri))
 
         elif request_code == REQ_SHOT:
-            global _shot_uri
             uri, _shot_uri = _shot_uri, None
             if uri is not None:
                 if result_code == RESULT_OK:
+                    last_name = _shot_name
                     path = prepare_image(_copy_uri(uri))
                 else:
                     # camera cancelled: remove the empty MediaStore row
@@ -115,11 +134,12 @@ def pick_image(callback):
 
 def take_photo(callback):
     """Opens the OnePlus camera app. The shot is also kept in Pictures/Bingo."""
-    global _shot_uri
+    global _shot_uri, _shot_name
     _callbacks[REQ_SHOT] = callback
 
     values = ContentValues()
-    values.put("_display_name", "bingo_%d.jpg" % int(time.time()))
+    _shot_name = "bingo_%d.jpg" % int(time.time())
+    values.put("_display_name", _shot_name)
     values.put("mime_type", "image/jpeg")
     values.put("relative_path", "Pictures/Bingo")
 

@@ -6,3 +6,5 @@ testing/
 bingo.db
 aiOutput.txt
 testAi.py
+assets/model/roberta-base/model.int8.onnx
+*.apk

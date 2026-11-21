@@ -4,8 +4,10 @@ set PKG=org.group4.bingo
 
 %ADB% shell rm -rf /data/local/tmp/src
 %ADB% shell mkdir -p /data/local/tmp/src
-%ADB% push main.py /data/local/tmp/src/
-%ADB% push phone_io.py /data/local/tmp/src/
+
+rem every .py file in this folder (main.py, phone_io.py, setup_screen.py, ui_kit.py, ...)
+for %%f in (*.py) do %ADB% push %%f /data/local/tmp/src/
+
 %ADB% push bingo.kv /data/local/tmp/src/
 %ADB% push reconstruction /data/local/tmp/src/
 %ADB% push assets /data/local/tmp/src/

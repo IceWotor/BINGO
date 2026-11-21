@@ -13,7 +13,7 @@ CHANNEL_W = 4.0     # log-bonus for resembling what OCR saw
 PAGE_BONUS = 0.8    # log-bonus for words already used on this page
 KEEP, BEAM = 30, 4
 MAX_SLOT_FRAC = 0.35
-
+LEN_W = 1.0
 
 @dataclass
 class Candidate:
@@ -46,6 +46,11 @@ class Slot:
     lm_note: str = ""
     n_cands: int = 0
     log_z: float = 0.0
+    prefix: str = ""
+    suffix: str = ""
+    hidden: int = -1
+    span_end: object = None
+    debug: dict = None
 
 
 @dataclass
@@ -59,6 +64,8 @@ class Result:
     terms: list
     ocr_mean_conf: float
     has_conf: bool
+    engine: str = "trigram"
+    engine_info: dict = field(default_factory=dict)
 
 
 _cache = {}
@@ -183,7 +190,7 @@ def detect(words, has_conf=True):
 
     return Detection(words, tokens, gaps, stats, has_conf)
 
-def reconstruct_words(words, has_conf=True, detection=None):
+def reconstruct_words(words, has_conf=True, detection=None, engine=None):    
     det = detection or detect(words, has_conf)
     tokens, gaps, stats = det.tokens, det.gaps, det.stats
     base = get_base_lm()
@@ -219,13 +226,25 @@ def reconstruct_words(words, has_conf=True, detection=None):
             cur = []
     if cur:
         runs.append(cur)
-    lm = base.clone()
-    lm.train(runs)
-    lm.finalize()
+    engine_used, engine_info = "trigram", {}
+    if engine is not None and slots:
+        try:
+            engine.fill(words, slots)
+            engine_used, engine_info = engine.name, dict(engine.stats)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            engine_info = dict(error="%s: %s" % (type(e).__name__, e))
+            for s in slots:
+                s.chosen_words, s.candidates = [], []
 
-    for k, x in enumerate(seq):
-        if isinstance(x, Slot):
-            _solve(x, lm, _left(seq, k), _right(seq, k), page_vocab)
+    if engine_used == "trigram":
+        lm = base.clone()
+        lm.train(runs)
+        lm.finalize()
+        for k, x in enumerate(seq):
+            if isinstance(x, Slot):
+                _solve(x, lm, _left(seq, k), _right(seq, k), page_vocab)
 
     def marker(s):
         return "{{%d|%s}}" % (s.id, " ".join(s.chosen_words))
@@ -244,7 +263,7 @@ def reconstruct_words(words, has_conf=True, detection=None):
     mean_conf = sum(confs) / len(confs) if confs else 0.0
     terms = extract_terms(annotated, {s.id: s for s in slots}, mean_conf)
     return Result(words, tokens, gaps, stats, slots, annotated, terms,
-                  mean_conf, det.has_conf)
+                  mean_conf, det.has_conf, engine_used, engine_info)
 
 def reconstruct_page(image_path):
     words, has_conf = run_ocr(image_path)
